@@ -3,28 +3,26 @@
     <UnifiedMap :default-dataset="'project-grants'" />
     <template #fallback>
       <div class="flex flex-col h-screen w-full items-center justify-center bg-gradient-to-b from-black via-gray-950 to-black text-white">
-        <!-- Animated background rings -->
-        <div class="relative mb-8">
-          <div class="h-24 w-24 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 animate-pulse"></div>
-          <div class="absolute inset-0 h-24 w-24 rounded-full border-2 border-cyan-500/30 animate-ping"></div>
-          <div class="absolute -inset-4 h-32 w-32 rounded-full border border-purple-500/20 animate-ping" style="animation-delay: 0.5s"></div>
+        <!-- eclipse rings overlay -->
+        <div class="relative mb-8 flex items-center justify-center w-28 h-28">
+          <iconify-icon icon="svg-spinners:eclipse" class="absolute w-28 h-28 text-cyan-500/20" />
+          <iconify-icon icon="svg-spinners:eclipse" class="absolute w-20 h-20 text-purple-500/30 animate-[spin_0.8s_linear_infinite]" />
+          <iconify-icon icon="svg-spinners:blocks-shuffle-2" class="relative w-12 h-12 text-white" />
         </div>
-        <h2 class="text-xl font-semibold mb-2 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-          Loading Project Grants Map
-        </h2>
-        <p class="text-sm text-gray-400">Initializing interactive visualization...</p>
-        <!-- Progress dots -->
-        <div class="flex gap-2 mt-6">
-          <div class="h-2 w-2 rounded-full bg-cyan-500 animate-bounce"></div>
-          <div class="h-2 w-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 0.2s"></div>
-          <div class="h-2 w-2 rounded-full bg-pink-500 animate-bounce" style="animation-delay: 0.4s"></div>
-        </div>
+        <LoadingSpinner
+          :message="'Loading Project Grants Map'"
+          size="sm"
+        />
+        <p class="text-sm text-gray-400 mt-2">Initializing interactive visualization...</p>
+        <!-- 3-dots-move indicator -->
+        <iconify-icon icon="svg-spinners:3-dots-move" class="w-6 h-6 text-cyan-400 mt-4" />
       </div>
     </template>
   </ClientOnly>
 </template>
 
 <script setup lang="ts">
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 
 useHead({
   title: 'Project Grants Map (2D) | Earth Guardians',

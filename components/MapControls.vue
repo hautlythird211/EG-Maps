@@ -11,7 +11,7 @@
             class="w-10 h-10 rounded-md bg-black/70 border border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
             @click="showSearch = !showSearch"
           >
-            <Search class="h-5 w-5" />
+            <iconify-icon icon="lucide:search" class="h-5 w-5" />
           </UiButton>
         </template>
         <p>Search</p>
@@ -26,8 +26,8 @@
             class="w-10 h-10 rounded-md bg-black/70 border border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
             @click="emit('toggle-hex-grid')"
           >
-            <Grid v-if="showHexGrid" class="h-5 w-5" />
-            <Layers v-else class="h-5 w-5" />
+            <iconify-icon v-if="showHexGrid" icon="lucide:grid-3x3" class="h-5 w-5" />
+            <iconify-icon v-else icon="lucide:layers" class="h-5 w-5" />
           </UiButton>
         </template>
         <p>{{ showHexGrid ? 'Hide Hex Grid' : 'Show Hex Grid' }}</p>
@@ -42,8 +42,8 @@
             class="w-10 h-10 rounded-md bg-black/70 border border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
             @click="toggleFullscreen"
           >
-            <Minimize v-if="fullscreen" class="h-5 w-5" />
-            <Maximize v-else class="h-5 w-5" />
+            <iconify-icon v-if="fullscreen" icon="lucide:minimize-2" class="h-5 w-5" />
+            <iconify-icon v-else icon="lucide:maximize-2" class="h-5 w-5" />
           </UiButton>
         </template>
         <p>{{ fullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen' }}</p>
@@ -57,7 +57,7 @@
           Search {{ dataset === 'project-grants' ? 'Projects' : 'Species' }}
         </h3>
         <UiButton variant="ghost" size="icon" class="h-6 w-6 text-gray-400 hover:text-white" @click="closeSearch">
-          <X class="h-4 w-4" />
+          <iconify-icon icon="lucide:x" class="h-4 w-4" />
         </UiButton>
       </div>
 
@@ -70,7 +70,7 @@
             v-model="searchQuery"
             class="bg-gray-900/50 border-cyan-900/50 focus:border-cyan-500 text-white pr-9"
           />
-          <Search class="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+          <iconify-icon icon="lucide:search" class="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
         </div>
         <UiButton
           variant="outline"
@@ -79,7 +79,7 @@
           title="Show All"
           @click="toggleAllItems"
         >
-          <List class="h-4 w-4" />
+          <iconify-icon icon="lucide:list" class="h-4 w-4" />
         </UiButton>
       </div>
 
@@ -97,7 +97,7 @@
               </h4>
               <div class="flex justify-between">
                 <p class="text-xs text-gray-400 flex items-center">
-                  <MapPin class="h-3 w-3 inline mr-1 flex-shrink-0" />
+                  <iconify-icon icon="lucide:map-pin" class="h-3 w-3 inline mr-1 flex-shrink-0" />
                   {{ result.country_province || result.region }}
                 </p>
                 <p v-if="result.indirect_beneficiaries" class="text-xs text-gray-500">
@@ -108,16 +108,16 @@
                 </p>
               </div>
             </div>
-            <ArrowRight class="h-4 w-4 text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0 mt-1" />
+            <iconify-icon icon="lucide:arrow-right" class="h-4 w-4 text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0 mt-1" />
           </div>
         </template>
         <template v-else>
           <div v-if="searchQuery.length > 0" class="text-xs text-gray-400 text-center py-2">No results found</div>
           <div v-else-if="!showAllItems" class="flex flex-col space-y-2 items-center justify-center py-4">
-            <Search class="h-8 w-8 text-cyan-900/50" />
+            <iconify-icon icon="lucide:search" class="h-8 w-8 text-cyan-900/50" />
             <p class="text-xs text-gray-400 text-center">Enter search term or click "List" to view all</p>
             <UiButton variant="outline" size="sm" class="mt-2 text-xs border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30" @click="toggleAllItems">
-              <List class="h-3 w-3 mr-1" />
+              <iconify-icon icon="lucide:list" class="h-3 w-3 mr-1" />
               Show All
             </UiButton>
           </div>
@@ -139,9 +139,6 @@ import { useMediaQuery } from '@/composables/useMediaQuery'
 import { allProjectsData } from '@/lib/project-data'
 import type { ProjectData } from '@/lib/types'
 import type { Species } from '@/composables/useSpeciesData'
-import {
-  Search, Layers, Grid, X, Maximize, Minimize, ArrowRight, MapPin, List
-} from 'lucide-vue-next'
 
 interface Props {
   isGlobeView?: boolean

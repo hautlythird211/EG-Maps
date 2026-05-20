@@ -129,6 +129,10 @@ let isMounted = true
 
 const MAPTILER_API_KEY = useRuntimeConfig().public.maptilerApiKey || ''
 
+const MAP_STYLE = MAPTILER_API_KEY
+  ? `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_API_KEY}`
+  : 'https://demotiles.maplibre.org/style.json'
+
 async function initMap() {
   if (typeof window === 'undefined' || !containerRef.value) return
 
@@ -145,7 +149,7 @@ async function initMap() {
 
     map = new maplibregl.default.Map({
       container: containerRef.value,
-      style: `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_API_KEY}`,
+      style: MAP_STYLE,
       zoom: isMobile.value ? 1.8 : 3,
       center: [0, 0],
       attributionControl: false,

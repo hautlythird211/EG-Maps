@@ -5,6 +5,8 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/tailwindcss'],
 
+  plugins: ['~/plugins/iconify-icon.client.ts'],
+
   // SSG configuration - static site generation
   ssr: true,
   routeRules: {

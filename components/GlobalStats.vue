@@ -22,8 +22,8 @@
           @click="isExpanded = !isExpanded"
           :title="isExpanded ? 'Collapse' : 'Expand'"
         >
-          <ChevronDown v-if="isExpanded" :class="isMobile ? 'h-5 w-5' : 'h-4 w-4'" />
-          <ChevronUp v-else :class="isMobile ? 'h-5 w-5' : 'h-4 w-4'" />
+          <iconify-icon v-if="isExpanded" icon="lucide:chevron-down" :class="isMobile ? 'h-5 w-5' : 'h-4 w-4'" />
+          <iconify-icon v-else icon="lucide:chevron-up" :class="isMobile ? 'h-5 w-5' : 'h-4 w-4'" />
         </UiButton>
         <UiButton
           variant="ghost"
@@ -32,7 +32,7 @@
           @click="closePanel"
           title="Close"
         >
-          <X :class="isMobile ? 'h-5 w-5' : 'h-4 w-4'" />
+          <iconify-icon icon="lucide:x" :class="isMobile ? 'h-5 w-5' : 'h-4 w-4'" />
         </UiButton>
       </div>
     </div>
@@ -78,17 +78,9 @@
 import { computed, ref } from 'vue'
 import { useMediaQuery } from '@/composables/useMediaQuery'
 import type { ProjectData } from '@/lib/types'
-import { ChevronDown, ChevronUp, X } from 'lucide-vue-next'
 
-interface Props {
-  projects: ProjectData[]
-}
-
-const props = defineProps<Props>()
-
-const emit = defineEmits<{
-  close: []
-}>()
+const props = defineProps<{ projects: ProjectData[] }>()
+const emit = defineEmits<{ close: [] }>()
 
 const isMobile = useMediaQuery('(max-width: 768px)')
 const isExpanded = ref(true)
@@ -125,14 +117,6 @@ function formatNumber(num: number): string {
 <script lang="ts">
 // StatCard sub-component
 import { defineComponent, h } from 'vue'
-import { Zap, Globe, Users, BarChart2 } from 'lucide-vue-next'
-
-const iconMap: Record<string, any> = {
-  'zap': Zap,
-  'globe': Globe,
-  'users': Users,
-  'bar-chart-2': BarChart2,
-}
 
 const StatCard = defineComponent({
   props: {
@@ -148,7 +132,6 @@ const StatCard = defineComponent({
     const valueTextSize = props.isMobile ? 'text-lg' : 'text-xl'
     const labelTextSize = props.isMobile ? 'text-xs' : 'text-[11px]'
     const rgb = props.glowColorRGB.join(',')
-    const IconComponent = iconMap[props.icon]
 
     return () => h('div', {
       class: 'flex flex-col items-center p-2 bg-gray-900/60 rounded-lg hover:bg-gray-800/70 transition-all duration-200 group shadow-[inset_0_0_10px_rgba(0,0,0,0.3)] hover:shadow-[inset_0_0_15px_rgba(0,0,0,0.5)]'
@@ -158,7 +141,7 @@ const StatCard = defineComponent({
       }, [
         h('span', {
           class: `${props.accentColor} group-hover:scale-110 transition-transform duration-200 [filter:drop-shadow(0_0_3px_rgba(${rgb},0.6))]`
-        }, [h(IconComponent, { class: 'w-4 h-4' })])
+        }, [h('iconify-icon', { icon: props.icon, class: 'w-4 h-4' })])
       ]),
       h('span', {
         class: `${valueTextSize} font-bold ${props.accentColor} [text-shadow:_0_0_6px_rgba(${rgb},0.6),_0_0_9px_rgba(${rgb},0.4)]`

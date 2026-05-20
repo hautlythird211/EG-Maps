@@ -117,6 +117,10 @@ import { buildProjectPopupHTML, buildSpeciesPopupHTML, isValidCoordinate, genera
 
 const MAPTILER_API_KEY = useRuntimeConfig().public.maptilerApiKey || ''
 
+const MAP_STYLE = MAPTILER_API_KEY
+  ? `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_API_KEY}`
+  : 'https://demotiles.maplibre.org/style.json'
+
 interface Props {
   projects?: ProjectData[]
   species?: Species[]
@@ -409,7 +413,7 @@ function initMap() {
   try {
     map = new maplibregl.Map({
       container: mapContainerRef.value,
-      style: `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_API_KEY}`,
+      style: MAP_STYLE,
       zoom: isMobile.value ? 1.8 : 3,
       center: [0, 0],
       attributionControl: false,
