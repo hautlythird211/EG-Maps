@@ -20,18 +20,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.0
+          run_install: false
 
-      - run: pnpm generate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build static site
+        run: pnpm generate
+
+      - name: Verify output
+        run: |
+          echo "Output directory contents:"
+          ls -la .output/public
+          echo "Build complete"
 
       - uses: actions/upload-pages-artifact@v3
         with:
