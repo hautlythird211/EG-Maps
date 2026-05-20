@@ -19,6 +19,7 @@ export default defineNuxtConfig({
 
   // App configuration
   app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || '/',
     head: {
       title: 'Earth Guardians - Interactive Data Visualization',
       meta: [
