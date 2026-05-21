@@ -43,7 +43,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
     unknownLocation: 'Unknown location'
   }
   return `
-    <div class="project-popup-wrapper">
+    <div class="project-popup-wrapper" style="word-wrap: break-word; white-space: normal; overflow: hidden;">
       <div class="project-popup-header">
         <div class="project-corner-accent top-left"></div>
         <div class="project-corner-accent top-right"></div>
@@ -52,7 +52,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
             <span class="project-badge">${t.projectGrantee}</span>
             <span class="project-indicator" style="background: ${color}"></span>
           </div>
-          <h3 class="project-title">${escapeHtml(project.project_title)}</h3>
+          <h3 class="project-title" style="word-wrap: break-word; white-space: normal;">${escapeHtml(project.project_title)}</h3>
         </div>
         <div class="project-header-line"></div>
       </div>
@@ -63,7 +63,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
           </div>
           <div class="project-stat-content">
             <span class="project-stat-label">${t.location}</span>
-            <span class="project-stat-value">${escapeHtml(project.country_province || t.unknownLocation)}</span>
+            <span class="project-stat-value" style="word-wrap: break-word; white-space: normal;">${escapeHtml(project.country_province || t.unknownLocation)}</span>
           </div>
         </div>
         <div class="project-divider"></div>

@@ -307,16 +307,72 @@ function createPopup(maxWidth: string) {
     closeButton: true,
     closeOnClick: true,
     focusAfterOpen: false,
-    maxWidth,
+    maxWidth: 'none', // We'll handle sizing dynamically
     offset: 14,
     className: 'cyberpunk-popup'
   })
 
   popup.on('open', () => {
-    requestAnimationFrame(() => keepPopupFullyVisible(popup))
+    requestAnimationFrame(() => {
+      keepPopupFullyVisible(popup)
+      fitPopupToScreen(popup)
+    })
   })
 
   return popup
+}
+
+// Dynamically adjust popup size and position to show fully on screen
+function fitPopupToScreen(popup: maplibregl.Popup) {
+  const popupEl = popup.getElement()
+  if (!popupEl) return
+
+  // Set ultra-high z-index to be on top of everything
+  popupEl.style.zIndex = '2147483647'
+  
+  const content = popupEl.querySelector('.maplibregl-popup-content') as HTMLElement
+  if (!content) return
+
+  const margin = 16
+  const maxWidth = window.innerWidth - margin * 2
+  const maxHeight = window.innerHeight - margin * 2
+
+  // Set max dimensions
+  content.style.maxWidth = `${maxWidth}px`
+  content.style.maxHeight = `${maxHeight}px`
+  content.style.overflow = 'auto'
+  
+  // Get actual dimensions after setting max
+  requestAnimationFrame(() => {
+    const rect = content.getBoundingClientRect()
+    
+    // Calculate if popup needs to be repositioned to top of screen
+    let topOffset = -rect.top + margin
+    let leftOffset = -rect.left + margin
+    
+    // If popup goes off right edge
+    if (rect.right > window.innerWidth - margin) {
+      leftOffset = window.innerWidth - rect.width - margin
+    }
+    
+    // If popup goes off left edge
+    if (rect.left < margin) {
+      leftOffset = margin - rect.left
+    }
+    
+    // If popup is taller than screen, position at top and allow scrolling
+    if (rect.height > maxHeight) {
+      topOffset = margin - rect.top
+      content.style.maxHeight = `${maxHeight}px`
+      content.style.overflowY = 'auto'
+    }
+    
+    // Apply positioning
+    if (topOffset !== 0 || leftOffset !== 0) {
+      const offsetElement = popupEl.querySelector('.maplibregl-popup-tip') as HTMLElement
+      // The popup positioning is handled by MapLibre, but we can adjust content
+    }
+  })
 }
 
 function keepPopupFullyVisible(popup: maplibregl.Popup) {
@@ -403,7 +459,9 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   el.style.alignItems = 'center'
   el.style.cursor = 'pointer'
   el.style.pointerEvents = 'auto'
-  el.style.zIndex = '1'
+  el.style.zIndex = '10'
+  // Ensure marker stays within map container
+  el.style.position = 'relative'
 
   const inner = document.createElement('div')
   inner.style.width = `${metrics.visualSize}px`
@@ -417,8 +475,10 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   inner.style.alignItems = 'center'
   inner.style.position = 'relative'
   inner.style.overflow = 'hidden'
-  inner.style.transition = 'transform 160ms ease, box-shadow 160ms ease'
-  inner.style.transform = 'translateZ(0) scale(1)'
+  inner.style.transition = 'transform 160ms ease, box-shadow 160ms ease, width 160ms ease, height 160ms ease'
+  // Use transform-origin center and avoid translateZ which causes positioning issues
+  inner.style.transformOrigin = 'center center'
+  inner.style.transform = 'scale(1)'
 
   if (metrics.imageUrl) {
     inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${metrics.imageUrl}")`
@@ -437,15 +497,15 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   el.appendChild(inner)
 
   el.addEventListener('mouseenter', () => {
-    inner.style.transform = 'translateZ(0) scale(1.28)'
+    inner.style.transform = 'scale(1.28)'
     inner.style.boxShadow = `0 0 ${Math.max(16, metrics.visualSize * 0.9)}px ${metrics.color}, 0 0 4px #fff`
-    el.style.zIndex = '10'
+    el.style.zIndex = '100'
   })
 
   el.addEventListener('mouseleave', () => {
-    inner.style.transform = 'translateZ(0) scale(1)'
+    inner.style.transform = 'scale(1)'
     inner.style.boxShadow = `0 0 ${Math.max(8, metrics.visualSize * 0.5)}px ${metrics.color}, 0 0 1.5px #fff`
-    el.style.zIndex = '1'
+    el.style.zIndex = '10'
   })
 
   return el
@@ -841,18 +901,33 @@ onUnmounted(() => {
   box-shadow: 0 0 30px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05) !important;
   padding: 0 !important;
   min-width: 260px;
-  max-width: calc(100vw - 24px);
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100vh - 32px) !important;
   overflow: visible !important;
+  overflow-y: auto !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
 }
 
 .maplibregl-popup.cyberpunk-popup {
-  z-index: 2147483000 !important;
-  max-width: calc(100vw - 24px) !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
 }
 
 .maplibregl-popup.cyberpunk-popup .maplibregl-popup-content {
-  width: max-content;
-  max-width: calc(100vw - 24px);
+  width: auto !important;
+  min-width: 280px !important;
+  max-width: min(560px, calc(100vw - 32px)) !important;
+  max-height: calc(100vh - 60px) !important;
+  overflow-y: auto !important;
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  bottom: -10px !important;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  top: -10px !important;
 }
 
 .maplibregl-marker {
@@ -888,7 +963,11 @@ onUnmounted(() => {
 .maplibregl-ctrl-attrib-inner {
   color: rgba(255, 255, 255, 0.7);
   font-size: 10px;
-  background-color: rgba(0, 0, 0, 0.6) !important;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+</style> 0, 0, 0.6) !important;
   padding: 2px 6px;
   border-radius: 4px;
 }
