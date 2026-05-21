@@ -113,7 +113,7 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
     : ''
 
   return `
-    <div class="species-popup-wrapper">
+    <div class="species-popup-wrapper" style="word-wrap: break-word; white-space: normal; overflow: hidden;">
       ${imageHTML}
       <div class="species-header" style="border-bottom-color: ${color}40;">
         <div class="species-header-bg" style="background: linear-gradient(135deg, ${color}15, transparent);"></div>
@@ -126,8 +126,8 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
           <span class="species-category-badge" style="background: ${color};">${escapeHtml(species.category)}</span>
           <span class="species-group-badge" style="border-color: ${color}; color: ${color};">${escapeHtml(groupLabel)}</span>
         </div>
-        <h3 class="species-common-name">${escapeHtml(species.commonName)}</h3>
-        <p class="species-scientific-name">${escapeHtml(species.scientificName)}</p>
+        <h3 class="species-common-name" style="word-wrap: break-word; white-space: normal;">${escapeHtml(species.commonName)}</h3>
+        <p class="species-scientific-name" style="word-wrap: break-word; white-space: normal;">${escapeHtml(species.scientificName)}</p>
         <div class="species-ornament bottom">
           <svg width="40" height="8" viewBox="0 0 40 8">
             <circle cx="4" cy="4" r="2" fill="${color}" opacity="0.8"/>
@@ -139,7 +139,7 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
         </div>
       </div>
       <div class="species-body">
-        <p class="species-description">${escapeHtml(species.description)}</p>
+        <p class="species-description" style="word-wrap: break-word; white-space: normal;">${escapeHtml(species.description)}</p>
         <div class="species-details">
           <div class="species-detail-row">
             <div class="species-detail-icon">
@@ -156,7 +156,7 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
             </div>
             <div class="species-detail-content">
               <span class="species-detail-label">${t.region}</span>
-              <span class="species-detail-value">${escapeHtml(species.region)}</span>
+              <span class="species-detail-value" style="word-wrap: break-word; white-space: normal;">${escapeHtml(species.region)}</span>
             </div>
           </div>
           <div class="species-detail-row">
@@ -165,7 +165,7 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
             </div>
             <div class="species-detail-content">
               <span class="species-detail-label">${t.ecosystem}</span>
-              <span class="species-detail-value">${escapeHtml(species.ecosystem)}</span>
+              <span class="species-detail-value" style="word-wrap: break-word; white-space: normal;">${escapeHtml(species.ecosystem)}</span>
             </div>
           </div>
           <div class="species-detail-row endangerment">

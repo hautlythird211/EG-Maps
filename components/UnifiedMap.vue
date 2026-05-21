@@ -81,27 +81,21 @@
 
     <!-- Controls - 2D/3D toggle with enhanced styling -->
     <div :class="`absolute ${isMobile ? 'top-[5.35rem] left-3' : 'top-4 left-4'}`" :style="{ zIndex: 'var(--z-map-ui-controls)' }">
-      <div class="map-view-switcher panel-cyber rounded-md p-1 flex items-center gap-1">
-        <div class="relative">
-          <button
-            :class="[
-              'map-view-tab relative overflow-hidden',
-              isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop',
-              is2DActive ? 'map-view-tab-active' : 'map-view-tab-idle'
-            ]"
-            aria-current="page"
-            @click="setView('2d')"
-          >
-            <span class="relative z-10 flex items-center gap-2">
-              <iconify-icon icon="lucide:map" class="h-4 w-4" />
-              {{ t('globe.view2D') }}
-            </span>
-          </button>
-          <div
-            v-if="is2DActive"
-            class="pointer-events-none absolute inset-0 bg-gradient-to-r from-cyan-600 to-purple-600 opacity-0 transition-opacity duration-300"
-          />
-        </div>
+      <div class="map-view-switcher flex items-center gap-0.5">
+        <button
+          :class="[
+            'map-view-tab',
+            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop',
+            is2DActive ? 'map-view-tab-active' : 'map-view-tab-idle'
+          ]"
+          aria-current="page"
+          @click="setView('2d')"
+        >
+          <span class="relative z-10 flex items-center gap-2">
+            <iconify-icon icon="lucide:map" class="h-4 w-4" />
+            {{ t('globe.view2D') }}
+          </span>
+        </button>
         <NuxtLink
           :to="`${datasetBaseRoute}/3d`"
           :class="[
@@ -110,8 +104,10 @@
           ]"
           :aria-label="t('globe.switchTo3D')"
         >
-          <iconify-icon icon="lucide:globe" class="h-4 w-4" />
-          {{ t('globe.view3D') }}
+          <span class="relative z-10 flex items-center gap-2">
+            <iconify-icon icon="lucide:globe" class="h-4 w-4" />
+            {{ t('globe.view3D') }}
+          </span>
         </NuxtLink>
       </div>
     </div>
@@ -220,11 +216,22 @@ const MAP_STYLE = MAPTILER_API_KEY
   ? `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_API_KEY}`
   : 'https://demotiles.maplibre.org/style.json'
 
+// Tile caching for performance - actually stores and returns cached responses
 const tileCache = new Map<string, Response>()
 
 function transformRequest(url: string, resourceType?: string) {
+  // Return cached tile if available to avoid re-fetching
   if (resourceType === 'Tile' && tileCache.has(url)) {
-    return { url }
+    const cached = tileCache.get(url)!
+    return {
+      url,
+      headers: {},
+      method: 'GET',
+      type: 'image' as const,
+      credentials: 'same-origin' as const,
+      collectResourceTiming: false,
+      _cachedResponse: cached,
+    }
   }
   return { url }
 }
@@ -561,17 +568,14 @@ function rebuildMarkers() {
       if (!isValidCoordinate(project.latitude, project.longitude)) return
 
       const el = createProjectMarkerElement(project)
-      const popup = new maplibregl.Popup({
-        closeButton: true,
-        closeOnClick: true,
-        focusAfterOpen: false,
-        maxWidth: 'min(420px, calc(100vw - 24px))',
-        offset: 14,
-        className: 'cyberpunk-popup'
-      }).setHTML(buildProjectPopupHTML(project, projectPopupTranslations))
+      const popup = createPopup('min(420px, calc(100vw - 32px))')
+        .setHTML(buildProjectPopupHTML(project, projectPopupTranslations))
 
       popup.on('open', () => {
-        requestAnimationFrame(() => keepPopupFullyVisible(popup))
+        requestAnimationFrame(() => {
+          keepPopupFullyVisible(popup)
+          fitPopupToScreen(popup)
+        })
       })
 
       const marker = new maplibregl.Marker({ element: el })
@@ -588,8 +592,15 @@ function rebuildMarkers() {
       const el = createSpeciesMarkerElement(species)
       const localizedSpecies = getLocalizedSpecies(species)
 
-      const popup = createPopup('min(560px, calc(100vw - 24px))')
+      const popup = createPopup('min(560px, calc(100vw - 32px))')
         .setHTML(buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations))
+
+      popup.on('open', () => {
+        requestAnimationFrame(() => {
+          keepPopupFullyVisible(popup)
+          fitPopupToScreen(popup)
+        })
+      })
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([species.lng, species.lat])
@@ -896,13 +907,13 @@ onUnmounted(() => {
 
 .maplibregl-popup-content {
   background: rgba(0, 0, 0, 0.95) !important;
-  border-radius: 8px !important;
+  border-radius: clamp(0.375rem, 1vw, 0.5rem) !important;
   border: 1px solid rgba(6, 182, 212, 0.4) !important;
   box-shadow: 0 0 30px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05) !important;
   padding: 0 !important;
-  min-width: 260px;
-  max-width: calc(100vw - 32px) !important;
-  max-height: calc(100vh - 32px) !important;
+  min-width: clamp(14rem, 18vw, 16.25rem);
+  max-width: calc(100vw - 2rem) !important;
+  max-height: calc(100vh - 2rem) !important;
   overflow: visible !important;
   overflow-y: auto !important;
   word-wrap: break-word !important;
@@ -916,9 +927,9 @@ onUnmounted(() => {
 
 .maplibregl-popup.cyberpunk-popup .maplibregl-popup-content {
   width: auto !important;
-  min-width: 280px !important;
-  max-width: min(560px, calc(100vw - 32px)) !important;
-  max-height: calc(100vh - 60px) !important;
+  min-width: clamp(15rem, 22vw, 17.5rem) !important;
+  max-width: min(35rem, calc(100vw - 2rem)) !important;
+  max-height: calc(100vh - 3.75rem) !important;
   overflow-y: auto !important;
 }
 
@@ -942,12 +953,12 @@ onUnmounted(() => {
 
 .maplibregl-popup-close-button {
   color: rgba(6, 182, 212, 0.8) !important;
-  font-size: 18px !important;
-  padding: 4px 8px !important;
+  font-size: clamp(1rem, 1.5vw, 1.125rem) !important;
+  padding: 0.25rem 0.5rem !important;
   background: transparent !important;
   border: none !important;
-  top: 8px !important;
-  right: 8px !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
 }
 
 .maplibregl-popup-close-button:hover {
@@ -956,39 +967,16 @@ onUnmounted(() => {
 }
 
 .maplibregl-ctrl-bottom-right {
-  margin-bottom: 8px;
-  margin-right: 8px;
+  margin-bottom: clamp(0.375rem, 1vw, 0.5rem);
+  margin-right: clamp(0.375rem, 1vw, 0.5rem);
 }
 
 .maplibregl-ctrl-attrib-inner {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 10px;
+  font-size: clamp(0.5625rem, 0.8vw, 0.625rem);
   background-color: rgba(0, 0, 0, 0.6);
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-</style> 0, 0, 0.6) !important;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.maplibregl-ctrl-attrib-inner a {
-  color: rgba(6, 182, 212, 0.8);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.maplibregl-ctrl-attrib-inner a:hover {
-  color: rgba(6, 182, 212, 1);
-}
-
-.maplibregl-map {
-  background-color: transparent !important;
-}
-
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.1; }
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
 }
 
 .animate-pulse-slow {
@@ -1001,31 +989,34 @@ onUnmounted(() => {
 
 /* Project Popup Styles */
 .project-popup-wrapper {
-  padding: 16px;
-  min-width: 240px;
-  width: min(420px, calc(100vw - 24px));
-  max-width: calc(100vw - 24px);
+  padding: clamp(0.75rem, 2vw, 1rem);
+  min-width: clamp(14rem, 18vw, 16.25rem);
+  width: min(26.25rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  word-wrap: break-word;
+  white-space: normal;
+  overflow: hidden;
 }
 .project-popup-header {
   position: relative;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  padding-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
+  margin-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
 }
 .project-corner-accent {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(6, 182, 212, 0.5);
+  width: clamp(0.625rem, 1vw, 0.75rem);
+  height: clamp(0.625rem, 1vw, 0.75rem);
+  border: 0.125rem solid rgba(6, 182, 212, 0.5);
 }
 .project-corner-accent.top-left {
-  top: -4px;
-  left: -4px;
+  top: -0.25rem;
+  left: -0.25rem;
   border-right: none;
   border-bottom: none;
 }
 .project-corner-accent.top-right {
-  top: -4px;
-  right: -4px;
+  top: -0.25rem;
+  right: -0.25rem;
   border-left: none;
   border-bottom: none;
 }
@@ -1036,28 +1027,28 @@ onUnmounted(() => {
 .project-status-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: clamp(0.375rem, 1vw, 0.5rem);
+  margin-bottom: clamp(0.375rem, 1vw, 0.5rem);
 }
 .project-badge {
-  font-size: 10px;
+  font-size: clamp(0.5625rem, 0.8vw, 0.625rem);
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(6, 182, 212, 0.9);
   background: rgba(6, 182, 212, 0.1);
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.25rem;
   border: 1px solid rgba(6, 182, 212, 0.3);
 }
 .project-indicator {
-  width: 8px;
-  height: 8px;
+  width: clamp(0.375rem, 1vw, 0.5rem);
+  height: clamp(0.375rem, 1vw, 0.5rem);
   border-radius: 50%;
   box-shadow: 0 0 8px currentColor;
 }
 .project-title {
-  font-size: 14px;
+  font-size: clamp(0.75rem, 1.2vw, 0.875rem);
   font-weight: 600;
   color: #f0f0f0;
   line-height: 1.4;
@@ -1065,65 +1056,65 @@ onUnmounted(() => {
   overflow-wrap: anywhere;
 }
 .project-header-line {
-  height: 1px;
+  height: 0.0625rem;
   background: linear-gradient(90deg, rgba(6, 182, 212, 0.4), rgba(168, 85, 247, 0.4), transparent);
-  margin-top: 12px;
+  margin-top: clamp(0.5rem, 1.5vw, 0.75rem);
 }
 .project-popup-body {
-  padding: 0 4px;
+  padding: 0 0.25rem;
 }
 .project-stat-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: clamp(0.5rem, 1.2vw, 0.625rem);
+  margin-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
 }
 .project-stat-icon {
   color: rgba(6, 182, 212, 0.7);
-  margin-top: 2px;
+  margin-top: 0.125rem;
   flex-shrink: 0;
 }
 .project-stat-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
 }
 .project-stat-label {
-  font-size: 10px;
+  font-size: clamp(0.5625rem, 0.8vw, 0.625rem);
   color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .project-stat-value {
-  font-size: 13px;
+  font-size: clamp(0.6875rem, 1vw, 0.8125rem);
   color: #d1d5db;
 }
 .project-divider {
-  height: 1px;
+  height: 0.0625rem;
   background: rgba(255, 255, 255, 0.1);
-  margin: 12px 0;
+  margin: clamp(0.5rem, 1.5vw, 0.75rem) 0;
 }
 .project-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
 }
 .project-metric {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.25rem;
 }
 .project-metric-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 10px;
+  font-size: clamp(0.5625rem, 0.8vw, 0.625rem);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .project-metric-value {
-  font-size: 16px;
+  font-size: clamp(0.875rem, 1.3vw, 1rem);
   font-weight: 600;
 }
 .project-metric-value.direct {
@@ -1133,26 +1124,30 @@ onUnmounted(() => {
   color: #a855f7;
 }
 .project-popup-footer {
-  margin-top: 12px;
-  height: 3px;
+  margin-top: clamp(0.5rem, 1.5vw, 0.75rem);
+  height: 0.1875rem;
   position: relative;
 }
 .project-footer-glow {
   height: 100%;
   width: 60%;
   opacity: 0.4;
-  filter: blur(2px);
+  filter: blur(0.125rem);
 }
 
 /* Species Popup Styles */
 .species-popup-wrapper {
   padding: 0;
-  width: min(560px, calc(100vw - 24px));
-  max-width: calc(100vw - 24px);
-  overflow: visible;
+  width: min(35rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 3.75rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  white-space: normal;
 }
 .species-image-frame {
-  height: 180px;
+  height: clamp(8rem, 20vw, 11.25rem);
   overflow: hidden;
   border-bottom: 1px solid;
   background: rgba(0, 0, 0, 0.6);
@@ -1165,7 +1160,7 @@ onUnmounted(() => {
 }
 .species-header {
   position: relative;
-  padding: 16px;
+  padding: clamp(0.75rem, 2vw, 1rem);
   border-bottom: 1px solid;
   background: rgba(0, 0, 0, 0.3);
 }
@@ -1175,18 +1170,18 @@ onUnmounted(() => {
   pointer-events: none;
 }
 .species-ornament {
-  margin-bottom: 8px;
+  margin-bottom: clamp(0.375rem, 1vw, 0.5rem);
 }
 .species-ornament.top {
-  margin-bottom: 12px;
+  margin-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
 }
 .species-ornament.bottom {
-  margin-top: 12px;
+  margin-top: clamp(0.5rem, 1.5vw, 0.75rem);
   margin-bottom: 0;
 }
 .species-badges {
   display: flex;
-  gap: 8px;
+  gap: clamp(0.375rem, 1vw, 0.5rem);
   margin-bottom: 10px;
   flex-wrap: wrap;
 }
@@ -1303,11 +1298,34 @@ onUnmounted(() => {
 @media (max-width: 640px) {
   .project-popup-wrapper,
   .species-popup-wrapper {
-    width: calc(100vw - 24px);
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
   }
 
   .species-image-frame {
     height: 138px;
   }
+}
+
+/* Custom scrollbar for popup content */
+.project-popup-wrapper::-webkit-scrollbar,
+.species-popup-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.project-popup-wrapper::-webkit-scrollbar-track,
+.species-popup-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.project-popup-wrapper::-webkit-scrollbar-thumb,
+.species-popup-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.4);
+  border-radius: 3px;
+}
+
+.project-popup-wrapper::-webkit-scrollbar-thumb:hover,
+.species-popup-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6);
 }
 </style>

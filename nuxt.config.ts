@@ -26,6 +26,21 @@ export default defineNuxtConfig({
         { property: 'og:type', content: 'website' },
         { property: 'og:site_name', content: 'Earth Guardians' },
       ],
+      // Inline script to prevent flash of wrong theme - runs before page renders
+      script: [
+        {
+          innerHTML: `(function() {
+            try {
+              var saved = localStorage.getItem('darkMode');
+              if (saved === 'true' || (saved === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+              }
+            } catch (e) {}
+          })();`,
+          type: 'text/javascript',
+          tagPosition: 'head',
+        },
+      ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/eg-logo.png' },
         { rel: 'manifest', href: '/manifest.json' },

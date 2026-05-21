@@ -88,7 +88,7 @@
 
     <!-- Controls - 2D/3D toggle with enhanced styling -->
     <div :class="`absolute ${isMobile ? 'top-[5.35rem] left-3' : 'top-4 left-4'} z-[600]`">
-      <div class="map-view-switcher panel-cyber rounded-md p-1 flex items-center gap-1">
+      <div class="map-view-switcher flex items-center gap-0.5">
         <NuxtLink
           :to="datasetBaseRoute"
           :class="[
@@ -97,8 +97,10 @@
           ]"
           :aria-label="t('globe.switchTo2D')"
         >
-          <Icon name="lucide:map" class="h-4 w-4" />
-          {{ t('globe.view2D') }}
+          <span class="relative z-10 flex items-center gap-2">
+            <Icon name="lucide:map" class="h-4 w-4" />
+            {{ t('globe.view2D') }}
+          </span>
         </NuxtLink>
         <button
           :class="[
@@ -108,8 +110,10 @@
           disabled
           aria-current="page"
         >
-          <Icon name="lucide:globe" class="h-4 w-4" />
-          {{ t('globe.view3D') }}
+          <span class="relative z-10 flex items-center gap-2">
+            <Icon name="lucide:globe" class="h-4 w-4" />
+            {{ t('globe.view3D') }}
+          </span>
         </button>
       </div>
     </div>
@@ -766,7 +770,12 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
     /* Project Popup Styles */
     .project-popup-wrapper {
       padding: 16px;
-      min-width: 240px;
+      min-width: 260px;
+      width: min(420px, calc(100vw - 32px));
+      max-width: calc(100vw - 32px);
+      word-wrap: break-word;
+      white-space: normal;
+      overflow: hidden;
     }
     .project-popup-header {
       position: relative;
@@ -908,7 +917,13 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
     .species-popup-wrapper {
       padding: 0;
       min-width: 280px;
-      overflow: hidden;
+      width: min(560px, calc(100vw - 32px));
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      word-wrap: break-word;
+      white-space: normal;
     }
     .species-header {
       position: relative;

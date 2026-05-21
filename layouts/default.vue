@@ -3,7 +3,7 @@
     <slot />
 
     <!-- Top utility header -->
-    <header class="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,env(safe-area-inset-top))] z-[10000] max-w-[calc(100vw-1.5rem)] sm:right-[max(1rem,env(safe-area-inset-right))]">
+    <header class="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[5.35rem] sm:top-[max(5rem,env(safe-area-inset-top))] z-[10000] max-w-[calc(100vw-1.5rem)] sm:right-[max(1rem,env(safe-area-inset-right))]">
       <div :class="headerShellClass">
         <NuxtLink
           v-for="item in headerItems"
