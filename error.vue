@@ -20,7 +20,7 @@
 
       <!-- Error message -->
       <p class="text-xl text-[var(--text-secondary)] mb-8 max-w-md">
-        {{ error.statusCode === 404 ? 'Page not found' : 'Something went wrong' }}
+        {{ error.statusCode === 404 ? t('error.pageNotFound') : t('error.somethingWrong') }}
       </p>
 
       <!-- Action buttons -->
@@ -29,13 +29,13 @@
           to="/"
           class="px-6 py-3 rounded-lg font-medium bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(6,182,212,0.3)]"
         >
-          Go Home
+          {{ t('error.goHome') }}
         </NuxtLink>
         <button
           @click="handleError"
           class="px-6 py-3 rounded-lg font-medium bg-black/50 text-[var(--text-primary)] border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] transition-colors"
         >
-          Try Again
+          {{ t('error.tryAgain') }}
         </button>
       </div>
     </div>
@@ -44,9 +44,10 @@
 
 <script setup lang="ts">
 const error = useError()
+const { t } = useI18n()
 
 useHead({
-  title: `${error.value?.statusCode || 'Error'} | Earth Guardians`,
+  title: computed(() => `${error.value?.statusCode || 'Error'} | Earth Guardians`),
   meta: [
     { name: 'description', content: 'Earth Guardians - Page not found' },
   ],

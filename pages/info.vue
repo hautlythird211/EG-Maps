@@ -12,11 +12,11 @@
         </div>
         <h1 class="text-4xl sm:text-5xl font-bold mb-2">
           <span class="bg-gradient-to-r from-cyan-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">
-            Earth Guardians
+            {{ t('home.title') }}
           </span>
         </h1>
         <p class="text-lg text-[var(--text-secondary)]">
-          Interactive Data Visualization Platform
+          {{ t('home.subtitle') }}
         </p>
       </div>
 
@@ -29,28 +29,27 @@
               <Icon name="lucide:hand-heart" class="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 class="text-xl font-bold text-[var(--text-primary)] mb-2">Project Grants</h2>
+              <h2 class="text-xl font-bold text-[var(--text-primary)] mb-2">{{ t('info.projectGrants') }}</h2>
               <p class="text-[var(--text-secondary)] mb-4">
-                Explore Earth Guardians' global grant initiatives supporting communities worldwide.
-                The visualization shows {{ projectCount }} active projects with comprehensive beneficiary statistics.
+                {{ t('info.projectGrantsDesc', { count: projectCount }) }}
               </p>
               <div class="flex flex-wrap gap-3">
                 <span class="px-3 py-1 rounded-full text-xs bg-cyan-950/30 text-cyan-400 border border-cyan-900/50">
-                  {{ projectCount }} Projects
+                  {{ projectCount }} {{ t('info.projects') }}
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs bg-purple-950/30 text-purple-400 border border-purple-900/50">
-                  {{ totalDirectBeneficiaries }} Direct Beneficiaries
+                  {{ totalDirectBeneficiaries }} {{ t('info.directBeneficiaries') }}
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs bg-pink-950/30 text-pink-400 border border-pink-900/50">
-                  {{ totalIndirectBeneficiaries }} Indirect Beneficiaries
+                  {{ totalIndirectBeneficiaries }} {{ t('info.indirectBeneficiaries') }}
                 </span>
               </div>
               <div class="mt-4 flex gap-2">
                 <NuxtLink to="/project-grants" class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:opacity-90 transition-opacity">
-                  View 2D Map
+                  {{ t('info.view2dMap') }}
                 </NuxtLink>
                 <NuxtLink to="/project-grants/3d" class="px-4 py-2 rounded-lg text-sm font-medium bg-black/50 text-cyan-400 border border-cyan-900/50 hover:bg-cyan-950/30 transition-colors">
-                  View 3D Globe
+                  {{ t('info.view3dGlobe') }}
                 </NuxtLink>
               </div>
             </div>
@@ -64,28 +63,27 @@
               <Icon name="lucide:bird" class="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 class="text-xl font-bold text-[var(--text-primary)] mb-2">Endangered Species</h2>
+              <h2 class="text-xl font-bold text-[var(--text-primary)] mb-2">{{ t('info.endangeredSpecies') }}</h2>
               <p class="text-[var(--text-secondary)] mb-4">
-                Discover critically endangered species and their habitats around the world.
-                The database contains {{ speciesCount }} species across {{ taxonomicGroupCount }} taxonomic groups with comprehensive metadata.
+                {{ t('info.endangeredSpeciesDesc', { speciesCount: speciesCount, groupCount: taxonomicGroupCount }) }}
               </p>
               <div class="flex flex-wrap gap-3">
                 <span class="px-3 py-1 rounded-full text-xs bg-green-950/30 text-green-400 border border-green-900/50">
-                  {{ speciesCount }} Species
+                  {{ speciesCount }} {{ t('info.speciesLabel') }}
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs bg-emerald-950/30 text-emerald-400 border border-emerald-900/50">
-                  {{ taxonomicGroupCount }} Taxonomic Groups
+                  {{ taxonomicGroupCount }} {{ t('info.taxonomicGroups') }}
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs bg-teal-950/30 text-teal-400 border border-teal-900/50">
-                  Global Coverage
+                  {{ t('info.globalCoverage') }}
                 </span>
               </div>
               <div class="mt-4 flex gap-2">
                 <NuxtLink to="/endangered-species" class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:opacity-90 transition-opacity">
-                  View 2D Map
+                  {{ t('info.view2dMap') }}
                 </NuxtLink>
                 <NuxtLink to="/endangered-species/3d" class="px-4 py-2 rounded-lg text-sm font-medium bg-black/50 text-green-400 border border-green-900/50 hover:bg-green-950/30 transition-colors">
-                  View 3D Globe
+                  {{ t('info.view3dGlobe') }}
                 </NuxtLink>
               </div>
             </div>
@@ -99,49 +97,49 @@
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
             <Icon name="lucide:message-square" class="h-5 w-5 text-white" />
           </div>
-          <h2 class="text-xl font-bold text-[var(--text-primary)]">Feedback</h2>
+          <h2 class="text-xl font-bold text-[var(--text-primary)]">{{ t('info.feedback') }}</h2>
         </div>
 
         <form @submit.prevent="submitFeedback" class="space-y-4">
           <div>
             <label for="feedback-name" class="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-              Your Name (optional)
+              {{ t('info.feedbackName') }}
             </label>
             <input
               id="feedback-name"
               v-model="feedback.name"
               type="text"
-              placeholder="Enter your name"
+              :placeholder="t('info.feedbackNamePlaceholder')"
               class="w-full px-4 py-2 rounded-lg bg-black/50 border border-[var(--border-color)] text-[var(--text-primary)] placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-colors"
             />
           </div>
 
           <div>
             <label for="feedback-type" class="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-              Feedback Type
+              {{ t('info.feedbackType') }}
             </label>
             <select
               id="feedback-type"
               v-model="feedback.type"
               class="w-full px-4 py-2 rounded-lg bg-black/50 border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-colors"
             >
-              <option value="bug">Bug Report</option>
-              <option value="feature">Feature Request</option>
-              <option value="improvement">Improvement Suggestion</option>
-              <option value="general">General Feedback</option>
+              <option value="bug">{{ t('info.bugReport') }}</option>
+              <option value="feature">{{ t('info.featureRequest') }}</option>
+              <option value="improvement">{{ t('info.improvementSuggestion') }}</option>
+              <option value="general">{{ t('info.generalFeedback') }}</option>
             </select>
           </div>
 
           <div>
             <label for="feedback-message" class="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-              Your Feedback
+              {{ t('info.yourFeedback') }}
             </label>
             <textarea
               id="feedback-message"
               v-model="feedback.message"
               rows="5"
               maxlength="2000"
-              placeholder="Share your thoughts, report a bug, or suggest a feature..."
+              :placeholder="t('info.feedbackPlaceholder')"
               class="w-full px-4 py-2 rounded-lg bg-black/50 border border-[var(--border-color)] text-[var(--text-primary)] placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-colors resize-none"
               required
             />
@@ -154,7 +152,7 @@
             type="submit"
             class="w-full px-6 py-3 rounded-lg font-medium bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(6,182,212,0.3)] focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
           >
-            Submit Feedback
+            {{ t('info.submitFeedback') }}
           </button>
         </form>
 
@@ -162,16 +160,16 @@
         <div v-if="feedbackSubmitted" class="mt-4 p-4 rounded-lg bg-green-950/30 border border-green-900/50 text-green-400">
           <div class="flex items-center gap-2">
             <Icon name="lucide:check-circle" class="h-5 w-5" />
-            <span>Thank you! Your feedback has been submitted.</span>
+            <span>{{ t('info.feedbackSubmitted') }}</span>
           </div>
         </div>
       </div>
 
       <!-- Join CTA -->
       <div class="panel-cyber rounded-xl p-6 text-center">
-        <h3 class="text-xl font-bold text-[var(--text-primary)] mb-2">Want to Make a Difference?</h3>
+        <h3 class="text-xl font-bold text-[var(--text-primary)] mb-2">{{ t('info.makeDifference') }}</h3>
         <p class="text-[var(--text-secondary)] mb-4">
-          Join Earth Guardians and become part of the movement protecting our planet.
+          {{ t('info.makeDifferenceDesc') }}
         </p>
         <a
           href="https://www.earthguardians.org/crews"
@@ -180,7 +178,7 @@
           class="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium bg-gradient-to-r from-orange-500 to-red-600 text-white hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(249,115,22,0.3)]"
         >
           <Icon name="lucide:users" class="h-5 w-5" />
-          Join Earth Guardians
+          {{ t('info.joinUs') }}
         </a>
       </div>
     </div>
@@ -191,6 +189,9 @@
 import { ref, computed } from 'vue'
 import speciesData from '~/public/data/species.json'
 import { allProjectsData } from '@/lib/project-data'
+
+// i18n
+const { t } = useI18n()
 
 useHead({
   title: 'Info & Feedback | Earth Guardians',
