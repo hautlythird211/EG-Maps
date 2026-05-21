@@ -10,10 +10,10 @@
           <iconify-icon icon="svg-spinners:blocks-shuffle-2" class="relative w-12 h-12 text-white" />
         </div>
         <LoadingSpinner
-          :message="'Loading Project Grants Map'"
+          :message="t('loading.projectGrantsMap')"
           size="sm"
         />
-        <p class="text-sm text-gray-400 mt-2">Initializing interactive visualization...</p>
+        <p class="text-sm text-gray-400 mt-2">{{ t('loading.initializingVisualization') }}</p>
         <!-- 3-dots-move indicator -->
         <iconify-icon icon="svg-spinners:3-dots-move" class="w-6 h-6 text-cyan-400 mt-4" />
       </div>
@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+const { t } = useI18n()
 
 useHead({
   title: 'Project Grants Map (2D) | Earth Guardians',

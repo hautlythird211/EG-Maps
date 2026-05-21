@@ -7,16 +7,10 @@ export default defineNuxtConfig({
 
   plugins: ['~/plugins/iconify-icon.client.ts'],
 
-  // SSG configuration - static site generation
-  ssr: true,
+  // Pure SSG - no SSR, fully static for GitHub Pages
+  ssr: false,
   routeRules: {
-    '/': { prerender: true },
-    '/info': { prerender: true },
-    '/project-grants': { prerender: true },
-    '/project-grants/3d': { prerender: true },
-    '/endangered-species': { prerender: true },
-    '/endangered-species/3d': { prerender: true },
-    '/globe': { prerender: true },
+    '/**': { prerender: true },
   },
 
   // App configuration
@@ -44,7 +38,7 @@ export default defineNuxtConfig({
   // Runtime config for API keys
   runtimeConfig: {
     public: {
-      maptilerApiKey: process.env.NUXT_PUBLIC_MAPTILER_API_KEY || '',
+      maptilerApiKey: process.env.NUXT_PUBLIC_MAPTILER_API_KEY || process.env.MAPTILER_API_KEY || '',
     },
   },
 
@@ -67,10 +61,32 @@ export default defineNuxtConfig({
     compressPublicAssets: true,
   },
 
-  // Vite config for MapLibre
+  // WSL fix: disable vite-node IPC, enforce ws HMR
+  experimental: {
+    viteNode: false,
+    viteEnvironmentApi: true,
+    appManifest: false,
+  },
+
+  // Vite config for MapLibre + WSL HMR
   vite: {
     optimizeDeps: {
       include: ['maplibre-gl'],
+    },
+    server: {
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+      },
+      watch: {
+        ignored: ['**/node_modules/**', '**/.git/**', '**/*[*]*/**'],
+      },
+    },
+  },
+
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => tag === 'iconify-icon',
     },
   },
 });

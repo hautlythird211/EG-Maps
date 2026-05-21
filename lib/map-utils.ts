@@ -29,6 +29,7 @@ export interface SpeciesPopupTranslations {
   habitat: string
   region: string
   ecosystem: string
+  groupLabels?: Record<string, string>
 }
 
 export function buildProjectPopupHTML(project: ProjectData, translations?: PopupTranslations): string {
@@ -102,8 +103,18 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
     region: 'Region',
     ecosystem: 'Ecosystem'
   }
+  const groupLabel = t.groupLabels?.[species.taxonomicGroup] ?? species.taxonomicGroup
+  const imageHTML = species.imageUrl
+    ? `
+      <div class="species-image-frame" style="border-color: ${color}55;">
+        <img src="${escapeHtml(species.imageUrl)}" alt="${escapeHtml(species.commonName)}" class="species-image" loading="lazy" referrerpolicy="no-referrer" />
+      </div>
+    `
+    : ''
+
   return `
     <div class="species-popup-wrapper">
+      ${imageHTML}
       <div class="species-header" style="border-bottom-color: ${color}40;">
         <div class="species-header-bg" style="background: linear-gradient(135deg, ${color}15, transparent);"></div>
         <div class="species-ornament top">
@@ -113,7 +124,7 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
         </div>
         <div class="species-badges">
           <span class="species-category-badge" style="background: ${color};">${escapeHtml(species.category)}</span>
-          <span class="species-group-badge" style="border-color: ${color}; color: ${color};">${escapeHtml(species.taxonomicGroup)}</span>
+          <span class="species-group-badge" style="border-color: ${color}; color: ${color};">${escapeHtml(groupLabel)}</span>
         </div>
         <h3 class="species-common-name">${escapeHtml(species.commonName)}</h3>
         <p class="species-scientific-name">${escapeHtml(species.scientificName)}</p>

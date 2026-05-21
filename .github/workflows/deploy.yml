@@ -36,6 +36,7 @@ jobs:
         run: pnpm generate
         env:
           NUXT_APP_BASE_URL: /EG-Maps/
+          NUXT_PUBLIC_MAPTILER_API_KEY: ${{ secrets.NUXT_PUBLIC_MAPTILER_API_KEY }}
 
       - name: Verify output
         run: |
@@ -69,6 +70,7 @@ jobs:
         run: pnpm generate
         env:
           NUXT_APP_BASE_URL: /EG-Maps/
+          NUXT_PUBLIC_MAPTILER_API_KEY: ${{ secrets.NUXT_PUBLIC_MAPTILER_API_KEY }}
 
       - name: Restructure output for testing
         run: |

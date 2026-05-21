@@ -5,7 +5,7 @@
       <div class="flex h-screen w-full items-center justify-center bg-black text-white">
         <LoadingSpinner
           icon="svg-spinners:wind-toy"
-          :message="'Loading Endangered Species Map...'"
+          :message="t('loading.endangeredSpeciesMap')"
           :inline="true"
         />
       </div>
@@ -15,6 +15,8 @@
 
 <script setup lang="ts">
 import speciesData from '~/public/data/species.json'
+
+const { t } = useI18n()
 
 useHead({
   title: 'Endangered Species Map (2D) | Earth Guardians',

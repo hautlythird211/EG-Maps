@@ -1,5 +1,25 @@
 <template>
   <div class="w-full h-screen relative overflow-hidden bg-black" role="main" aria-label="3D Globe Visualization">
+    <!-- Loading skeleton -->
+    <Transition name="fade">
+      <div v-if="isLoading" class="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
+        <div class="relative mb-6">
+          <div class="w-20 h-20 rounded-full border-4 border-cyan-500/20 border-t-cyan-500 animate-spin" />
+          <div class="absolute inset-0 w-20 h-20 rounded-full border-4 border-purple-500/20 border-b-purple-500 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
+          <div class="absolute inset-0 flex items-center justify-center">
+            <Icon name="lucide:globe" class="w-8 h-8 text-cyan-400 animate-pulse" />
+          </div>
+        </div>
+        <p class="text-cyan-400 font-medium mb-2">{{ t('globe.loading') }}</p>
+        <p class="text-gray-500 text-sm">{{ t('globe.preparingData', { dataset: activeDataset === 'project-grants' ? t('home.projectGrants').toLowerCase() : t('home.species').toLowerCase() }) }}</p>
+        <div class="mt-4 flex gap-1">
+          <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 0ms" />
+          <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 150ms" />
+          <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 300ms" />
+        </div>
+      </div>
+    </Transition>
+
     <!-- Star field background -->
     <div class="star-field" aria-hidden="true"></div>
 
@@ -7,14 +27,49 @@
     <div class="absolute inset-0 pointer-events-none z-10 bg-black/40"></div>
 
     <!-- Subtle radial glow behind globe -->
-    <div class="absolute inset-0 pointer-events-none z-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/10 via-transparent to-transparent"></div>
+    <div class="absolute inset-0 pointer-events-none z-10 bg-gradient-radial from-cyan-900/10 via-transparent to-transparent"></div>
+
+    <!-- Atmospheric glow effect -->
+    <div class="absolute inset-0 pointer-events-none z-10">
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-gradient-to-r from-cyan-500/10 via-purple-500/5 to-emerald-500/10 blur-3xl animate-pulse-slow" />
+    </div>
 
     <!-- Vignette -->
     <div class="absolute inset-0 pointer-events-none z-20" style="box-shadow: inset 0 0 200px 40px rgba(0,0,0,0.9)"></div>
 
+    <!-- Grid overlay with image-set for 2x resolution -->
+    <div
+      class="absolute inset-0 pointer-events-none opacity-[0.03]"
+      :style="{
+        zIndex: 'calc(var(--z-map-effects) + 1)',
+        backgroundImage: 'image-set(url(/grid-overlay.png) 1x, url(/grid-overlay.png) 2x)',
+        backgroundRepeat: 'repeat',
+      }"
+    />
+
+    <!-- Noise overlay with image-set for 2x resolution -->
+    <div
+      class="absolute inset-0 pointer-events-none opacity-[0.02] animate-noise-bg"
+      :style="{
+        zIndex: 'calc(var(--z-map-effects) + 2)',
+        backgroundImage: 'image-set(url(/noise.png) 1x, url(/noise.png) 2x)',
+        backgroundRepeat: 'repeat',
+      }"
+    />
+
+    <!-- Scanline overlay with image-set for 2x resolution -->
+    <div
+      class="absolute inset-0 pointer-events-none opacity-[0.015]"
+      :style="{
+        zIndex: 'calc(var(--z-map-effects) + 3)',
+        backgroundImage: 'image-set(url(/scanline.gif) 1x, url(/scanline.gif) 2x)',
+        backgroundRepeat: 'repeat',
+      }"
+    />
+
     <!-- Hex grid overlay -->
     <canvas
-      v-if="showHexGrid"
+      v-if="isHexGridVisible"
       ref="hexCanvasRef"
       class="absolute inset-0 w-full h-full pointer-events-none opacity-15"
       :style="{ zIndex: 'var(--z-map-hex-grid)' }"
@@ -25,87 +80,112 @@
 
     <!-- White Banner -->
     <div v-if="isMobile" class="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none px-2" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[10vh] max-w-[200px] object-contain" loading="lazy" />
+      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[240px] object-contain" loading="lazy" />
     </div>
     <div v-else class="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[150px] -rotate-90 origin-center" loading="lazy" />
+      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[15vh] max-w-[180px] -rotate-90 origin-center" loading="lazy" />
     </div>
 
-    <!-- Dataset indicator -->
-    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-[600]">
-      <div class="panel-cyber rounded-lg px-4 py-2">
-        <div class="flex items-center gap-2">
-          <div :class="`w-2 h-2 rounded-full ${activeDataset === 'project-grants' ? 'bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-green-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`" />
-          <span class="text-xs font-medium text-[var(--text-primary)]">
-            {{ activeDataset === 'project-grants' ? 'Project Grants' : 'Endangered Species' }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Controls - 2D/3D toggle -->
-    <div class="absolute top-4 left-4 z-[600]">
-      <div class="panel-cyber rounded-lg p-2">
-        <div class="flex items-center gap-2">
-          <NuxtLink
-            :to="datasetBaseRoute"
-            class="px-3 py-1.5 rounded-md text-sm font-medium transition-all bg-black/50 text-cyan-400 hover:bg-cyan-950/30"
-            aria-label="Switch to 2D Map view"
-          >
-            2D Map
-          </NuxtLink>
-          <button
-            class="px-3 py-1.5 rounded-md text-sm font-medium bg-gradient-to-r from-cyan-600 to-purple-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]"
-            disabled
-            aria-current="page"
-          >
-            3D Globe
-          </button>
-        </div>
+    <!-- Controls - 2D/3D toggle with enhanced styling -->
+    <div :class="`absolute ${isMobile ? 'top-[5.35rem] left-3' : 'top-4 left-4'} z-[600]`">
+      <div class="map-view-switcher panel-cyber rounded-md p-1 flex items-center gap-1">
+        <NuxtLink
+          :to="datasetBaseRoute"
+          :class="[
+            'map-view-tab map-view-tab-idle',
+            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop'
+          ]"
+          :aria-label="t('globe.switchTo2D')"
+        >
+          <Icon name="lucide:map" class="h-4 w-4" />
+          {{ t('globe.view2D') }}
+        </NuxtLink>
+        <button
+          :class="[
+            'map-view-tab map-view-tab-active',
+            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop'
+          ]"
+          disabled
+          aria-current="page"
+        >
+          <Icon name="lucide:globe" class="h-4 w-4" />
+          {{ t('globe.view3D') }}
+        </button>
       </div>
     </div>
 
     <!-- Global Stats (only shown for project grants) -->
     <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-0 z-[1000] w-full max-w-xl px-4 sm:px-0">
-      <GlobalStats :projects="projectsData" />
+      <GlobalStats :projects="projectsData" @close="() => {}" />
     </div>
 
     <!-- Species legend (for endangered species) -->
     <div v-if="activeDataset === 'endangered-species'" class="absolute left-4 bottom-20 sm:bottom-4 z-[600]">
-      <div class="panel-cyber rounded-lg p-3">
-        <h3 class="text-xs font-bold text-[var(--text-primary)] mb-2">Taxonomic Groups</h3>
+      <div class="panel-cyber rounded-lg p-3 transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+        <h3 class="text-xs font-bold text-[var(--text-primary)] mb-2 flex items-center gap-1.5">
+          <Icon name="lucide:layers" class="h-3.5 w-3.5 text-cyan-400" />
+          {{ t('globe.taxonomicGroups') }}
+        </h3>
         <div class="grid grid-cols-2 gap-1.5">
-          <div v-for="(color, group) in GROUP_COLORS" :key="group" class="flex items-center gap-1.5">
-            <div class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: color }" />
-            <span class="text-[10px] text-[var(--text-secondary)]">{{ group }}</span>
+          <div v-for="(color, group) in GROUP_COLORS" :key="group" class="flex items-center gap-1.5 group cursor-pointer">
+            <div class="w-2.5 h-2.5 rounded-full transition-transform duration-200 group-hover:scale-125" :style="{ backgroundColor: color }" />
+            <span class="text-[10px] text-[var(--text-secondary)] group-hover:text-cyan-400 transition-colors">{{ group }}</span>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Map Controls -->
+    <MapControls
+      :is-globe-view="true"
+      :show-hex-grid="isHexGridVisible"
+      :show-connections="showConnections"
+      :dataset="activeDataset"
+      :projects="activeDataset === 'project-grants' ? projectsData : undefined"
+      :species="activeDataset === 'endangered-species' ? speciesData : undefined"
+      :style="{ zIndex: 'var(--z-map-ui-controls)' }"
+      @toggle-hex-grid="isHexGridVisible = !isHexGridVisible"
+      @toggle-connections="toggleConnections"
+      @navigate="navigateToLocation"
+    />
+
     <!-- Error state -->
-    <div v-if="hasError" class="absolute inset-0 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center text-white z-[2000]">
-      <div class="h-16 w-16 rounded-full bg-gradient-to-r from-red-500 to-orange-600 animate-pulse mb-6"></div>
-      <h2 class="text-xl font-bold mb-2">Unable to Load Visualization</h2>
-      <p class="text-gray-400 mb-4 text-center px-4">The component could not be loaded. Please check your connection and try again.</p>
-      <div class="flex gap-4">
-        <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-lg text-white font-medium hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-          Try Again
+    <Transition name="fade">
+      <div v-if="hasError" class="absolute inset-0 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center text-white z-[2000]">
+        <div class="relative mb-6">
+          <div class="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-orange-600 animate-pulse" />
+          <Icon name="lucide:alert-triangle" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-white" />
+        </div>
+        <h2 class="text-xl font-bold mb-2">{{ t('globe.unableToLoad') }}</h2>
+        <p class="text-gray-400 mb-4 text-center px-4 max-w-md">{{ t('globe.connectionError') }}</p>
+        <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-lg text-white font-medium hover:opacity-90 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center gap-2">
+          <Icon name="lucide:refresh-cw" class="h-4 w-4" />
+          {{ t('globe.tryAgain') }}
         </button>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
 import { useMediaQuery } from '@/composables/useMediaQuery'
+import { useI18n } from '@/composables/useI18n'
 import { allProjectsData } from '@/lib/project-data'
 import type { ProjectData } from '@/lib/types'
-import { isValidCoordinate, generateCurvedPath, calculateDistance, GROUP_COLORS, buildProjectPopupHTML, buildSpeciesPopupHTML } from '@/lib/map-utils'
+import { isValidCoordinate, GROUP_COLORS, buildProjectPopupHTML, buildSpeciesPopupHTML } from '@/lib/map-utils'
 import { getProjectColorByBeneficiaries } from '@/lib/colors'
 import type { Species } from '@/lib/map-utils'
+import {
+  buildMapConnectionFeatures,
+  createMapParticleSystem,
+  syncMapConnectionLayers,
+  type MapConnectionFeature,
+  type MapParticleSystem,
+} from '@/lib/map-effects'
+
+const { t, locale } = useI18n()
 
 interface Props {
   projects?: ProjectData[]
@@ -130,15 +210,17 @@ const isMobile = useMediaQuery('(max-width: 768px)')
 const containerRef = ref<HTMLDivElement | null>(null)
 const hexCanvasRef = ref<HTMLCanvasElement | null>(null)
 const hasError = ref(false)
+const isLoading = ref(true)
 const activeDataset = ref<'project-grants' | 'endangered-species'>(props.defaultDataset)
+const isHexGridVisible = ref(props.showHexGrid)
+const showConnections = ref(true)
 
 let map: maplibregl.Map | null = null
 let markers: maplibregl.Marker[] = []
-let animationFrameId: number | null = null
-let particles: any[] = []
-let particleElements: HTMLDivElement[] = []
 let isMounted = true
-let markerVisibilityCheckTimer: ReturnType<typeof setTimeout> | null = null
+let pendingVisibilityUpdate = false
+let connectionFeatures: MapConnectionFeature[] = []
+let particleSystem: MapParticleSystem | null = null
 
 const MAPTILER_API_KEY = useRuntimeConfig().public.maptilerApiKey || ''
 
@@ -166,6 +248,8 @@ function transformRequest(url: string, resourceType?: string) {
 
 async function initMap() {
   if (typeof window === 'undefined' || !containerRef.value) return
+
+  isLoading.value = true
 
   try {
     map = new maplibregl.Map({
@@ -199,6 +283,7 @@ async function initMap() {
     })
 
     map.on('load', () => {
+      isLoading.value = false
       rebuildMarkers()
       addConnections()
       startParticles()
@@ -207,19 +292,46 @@ async function initMap() {
     })
 
     map.on('move', () => {
-      updateMarkerVisibility()
+      // Throttle with RAF - only process visibility once per frame
+      if (!pendingVisibilityUpdate) {
+        pendingVisibilityUpdate = true
+        requestAnimationFrame(() => {
+          updateMarkerVisibility()
+          pendingVisibilityUpdate = false
+        })
+      }
     })
 
     map.on('moveend', () => {
       updateMarkerVisibility()
     })
 
+    let errorCount = 0
+    let usedFallback = false
+
     map.on('error', (err) => {
       console.error('MapLibre error:', err)
+      errorCount++
+      // Retry with fallback style once if we get tile/style load errors
+      if (!usedFallback && errorCount >= 2 && MAP_STYLE.includes('maptiler.com')) {
+        usedFallback = true
+        console.warn('MapTiler style failed, falling back to demotiles style')
+        map.setStyle('https://demotiles.maplibre.org/style.json')
+        return
+      }
+      isLoading.value = false
       hasError.value = true
     })
+
+    // Timeout fallback for loading
+    setTimeout(() => {
+      if (isLoading.value) {
+        isLoading.value = false
+      }
+    }, 10000)
   } catch (err) {
     console.error('Failed to load maplibre-gl:', err)
+    isLoading.value = false
     hasError.value = true
   }
 }
@@ -237,22 +349,21 @@ function createProjectMarkerElement(project: ProjectData): HTMLElement {
   el.style.justifyContent = 'center'
   el.style.alignItems = 'center'
   el.style.cursor = 'pointer'
-
+  // Inner black circle with white border (matching original site style)
   const innerWrapper = document.createElement('div')
   innerWrapper.style.width = '100%'
   innerWrapper.style.height = '100%'
   innerWrapper.style.borderRadius = '50%'
   innerWrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
-  innerWrapper.style.border = `2px solid ${color}`
-  innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 12}px ${color}`
+  innerWrapper.style.border = '2px solid rgba(255, 255, 255, 0.8)'
+  innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 7.5}px ${color}, 0 0 1.5px #fff`
   innerWrapper.style.display = 'flex'
   innerWrapper.style.justifyContent = 'center'
   innerWrapper.style.alignItems = 'center'
   innerWrapper.style.position = 'relative'
-  innerWrapper.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease'
-  innerWrapper.style.willChange = 'transform'
   el.appendChild(innerWrapper)
 
+  // Colored center dot
   const centerDot = document.createElement('div')
   centerDot.style.width = `${markerSize * 0.45}px`
   centerDot.style.height = `${markerSize * 0.45}px`
@@ -263,11 +374,11 @@ function createProjectMarkerElement(project: ProjectData): HTMLElement {
 
   el.addEventListener('mouseenter', () => {
     innerWrapper.style.transform = 'scale(1.25)'
-    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 25}px ${color}, 0 0 ${beneficiaryFactor * 5}px #fff`
+    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 25}px ${color}, 0 0 5px #fff`
   })
   el.addEventListener('mouseleave', () => {
     innerWrapper.style.transform = 'scale(1)'
-    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 12}px ${color}`
+    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 7.5}px ${color}, 0 0 1.5px #fff`
   })
 
   return el
@@ -283,70 +394,66 @@ function createSpeciesMarkerElement(species: Species): HTMLElement {
   el.style.height = `${markerSize}px`
   el.style.borderRadius = '50%'
   el.style.backgroundColor = color
-  el.style.border = '2px solid rgba(255,255,255,0.9)'
-  el.style.boxShadow = `0 0 8px ${color}40`
+  el.style.border = '2px solid rgba(255, 255, 255, 0.8)'
+  el.style.boxShadow = `0 0 8px ${color}, 0 0 1.5px #fff`
   el.style.cursor = 'pointer'
-  el.style.transition = 'transform 0.15s ease'
-  el.style.willChange = 'transform'
+  el.style.opacity = '0.9'
 
-  el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.4)' })
-  el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)' })
+  el.addEventListener('mouseenter', () => {
+    el.style.transform = 'scale(1.4)'
+  })
+  el.addEventListener('mouseleave', () => {
+    el.style.transform = 'scale(1)'
+  })
 
   return el
 }
 
-function isMarkerVisibleOnGlobe(lng: number, lat: number): boolean {
-  if (!map) return true
-  try {
-    const point = map.project([lng, lat])
-    if (!point || isNaN(point.x) || isNaN(point.y)) return false
-    const canvas = map.getCanvas()
-    const margin = 100
-    return (
-      point.x >= -margin &&
-      point.x <= canvas.width + margin &&
-      point.y >= -margin &&
-      point.y <= canvas.height + margin
-    )
-  } catch {
-    return false
-  }
-}
-
 function updateMarkerVisibility() {
   if (!map) return
-  const center = map.getCenter()
-  const antipodeLng = center.lng + 180
 
+  const canvas = map.getCanvas()
+  const margin = 50
+  const bounds = {
+    minX: -margin,
+    maxX: canvas.width + margin,
+    minY: -margin,
+    maxY: canvas.height + margin
+  }
+
+  // Batch DOM updates - only change what actually changed
   markers.forEach(marker => {
     const el = marker.getElement()
-    const lngLat = marker.getLngLat()
+    try {
+      const point = map!.project(marker.getLngLat())
+      if (!point || isNaN(point.x) || isNaN(point.y)) {
+        el.style.display = 'none'
+        el.style.pointerEvents = 'none'
+        return
+      }
 
-    let lngDiff = Math.abs(lngLat.lng - antipodeLng)
-    if (lngDiff > 180) lngDiff = 360 - lngDiff
+      const isVisible = (
+        point.x >= bounds.minX &&
+        point.x <= bounds.maxX &&
+        point.y >= bounds.minY &&
+        point.y <= bounds.maxY
+      )
 
-    const distFromCenter = calculateDistance(
-      center.lat, center.lng,
-      lngLat.lat, lngLat.lng
-    )
-
-    const isVisible = distFromCenter < 12000
-    const wasVisible = el.style.display !== 'none'
-
-    if (isVisible !== wasVisible) {
-      el.style.display = isVisible ? '' : 'none'
-      el.style.pointerEvents = isVisible ? '' : 'none'
+      // Only update DOM if state changed
+      const wasVisible = el.style.display !== 'none'
+      if (isVisible !== wasVisible) {
+        el.style.display = isVisible ? '' : 'none'
+        el.style.pointerEvents = isVisible ? '' : 'none'
+      }
+    } catch {
+      el.style.display = 'none'
+      el.style.pointerEvents = 'none'
     }
   })
 }
 
 function startMarkerVisibilityCheck() {
-  if (markerVisibilityCheckTimer) clearInterval(markerVisibilityCheckTimer)
-  markerVisibilityCheckTimer = setInterval(() => {
-    if (map && isMounted) {
-      updateMarkerVisibility()
-    }
-  }, 500)
+  // RAF-based updates handle this during interaction
 }
 
 function rebuildMarkers() {
@@ -354,6 +461,24 @@ function rebuildMarkers() {
 
   markers.forEach(m => m.remove())
   markers = []
+
+  // Translation objects for popups
+  const projectPopupTranslations = {
+    projectGrantee: t('stats.projectGrantees'),
+    directBeneficiaries: t('stats.directBeneficiaries'),
+    indirectBeneficiaries: t('stats.indirectBeneficiaries'),
+    location: t('project.location'),
+    status: t('project.status'),
+    unknownLocation: t('project.unknownLocation')
+  }
+  const speciesPopupTranslations = {
+    scientificName: t('species.scientificName'),
+    threatTypes: t('species.threatTypes'),
+    population: t('species.population'),
+    habitat: t('species.habitat'),
+    region: t('filter.region'),
+    ecosystem: t('filter.ecosystem')
+  }
 
   if (activeDataset.value === 'project-grants') {
     const data = isMobile.value
@@ -370,7 +495,7 @@ function rebuildMarkers() {
         maxWidth: isMobile.value ? '260px' : '300px',
         className: 'cyberpunk-popup',
         offset: 15,
-      }).setHTML(buildProjectPopupHTML(project))
+      }).setHTML(buildProjectPopupHTML(project, projectPopupTranslations))
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([project.longitude, project.latitude])
@@ -394,7 +519,7 @@ function rebuildMarkers() {
         maxWidth: '340px',
         className: 'cyberpunk-popup',
         offset: 10,
-      }).setHTML(buildSpeciesPopupHTML(species))
+      }).setHTML(buildSpeciesPopupHTML(species, speciesPopupTranslations))
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([species.lng, species.lat])
@@ -411,194 +536,52 @@ function rebuildMarkers() {
 function addConnections() {
   if (!map) return
 
-  if (map.getLayer('connections-layer')) map.removeLayer('connections-layer')
-  if (map.getSource('connections-source')) map.removeSource('connections-source')
+  cleanupParticles()
 
-  if (activeDataset.value !== 'project-grants') return
+  if (!showConnections.value) {
+    connectionFeatures = []
+    syncMapConnectionLayers(map, [])
+    return
+  }
 
-  const maxConnectionsPerProject = isMobile.value ? 2 : 3
-  const projectsToProcess = isMobile.value
-    ? projectsData.value.slice(0, Math.min(15, projectsData.value.length))
-    : projectsData.value
-
-  const features: any[] = []
-  const usedAsTarget = new Set<string>()
-
-  projectsToProcess.forEach(project => {
-    if (!isValidCoordinate(project.latitude, project.longitude)) return
-    const availableTargets = projectsToProcess.filter(
-      p => p.project_title !== project.project_title &&
-           isValidCoordinate(p.latitude, p.longitude) &&
-           !usedAsTarget.has(p.project_title)
-    )
-    if (availableTargets.length === 0) return
-
-    const targetsWithDistance = availableTargets.map(target => ({
-      project: target,
-      distance: calculateDistance(project.latitude!, project.longitude!, target.latitude!, target.longitude!)
-    })).sort((a, b) => b.distance - a.distance)
-
-    const connectionsToMake = Math.min(maxConnectionsPerProject, targetsWithDistance.length)
-    for (let i = 0; i < connectionsToMake; i++) {
-      const targetData = targetsWithDistance[i]
-      if (targetData && !usedAsTarget.has(targetData.project.project_title)) {
-        const controlPoint = generateCurvedPath(
-          [project.longitude, project.latitude],
-          [targetData.project.longitude!, targetData.project.latitude!]
-        )
-        const color = getProjectColorByBeneficiaries(
-          project.direct_beneficiaries || 1000,
-          project.indirect_beneficiaries || 1000
-        )
-
-        features.push({
-          type: 'Feature',
-          properties: { color },
-          geometry: {
-            type: 'LineString',
-            coordinates: [
-              [project.longitude, project.latitude],
-              controlPoint,
-              [targetData.project.longitude!, targetData.project.latitude!]
-            ]
-          }
-        })
-        usedAsTarget.add(targetData.project.project_title)
-      }
-    }
+  connectionFeatures = buildMapConnectionFeatures({
+    dataset: activeDataset.value,
+    projects: projectsData.value,
+    species: speciesData.value,
+    isMobile: isMobile.value,
   })
 
-  if (features.length === 0) return
-
-  map.addSource('connections-source', {
-    type: 'geojson',
-    data: {
-      type: 'FeatureCollection',
-      features
-    }
-  })
-
-  map.addLayer({
-    id: 'connections-layer',
-    type: 'line',
-    source: 'connections-source',
-    layout: { 'line-join': 'round', 'line-cap': 'round' },
-    paint: {
-      'line-color': ['get', 'color'],
-      'line-width': 2,
-      'line-opacity': 0.25,
-      'line-dasharray': [0.5, 2.5]
-    }
-  })
-
-  ;(map as any)._connectionFeatures = features
+  syncMapConnectionLayers(map, connectionFeatures)
 }
 
-async function startParticles() {
-  if (!isMounted) return
-  if (!map || !containerRef.value) return
-  const features = (map as any)._connectionFeatures
-  if (!features || features.length === 0) return
+function cleanupParticles() {
+  particleSystem?.stop()
+  particleSystem = null
+}
 
-  if (animationFrameId) cancelAnimationFrame(animationFrameId)
-  particleElements.forEach(el => {
-    if (el.parentNode) el.parentNode.removeChild(el)
+function startParticles() {
+  if (!showConnections.value || !isMounted || !map || !containerRef.value || !connectionFeatures.length) return
+
+  cleanupParticles()
+
+  particleSystem = createMapParticleSystem({
+    map,
+    container: containerRef.value,
+    getFeatures: () => connectionFeatures,
+    isMobile: () => isMobile.value,
+    zIndex: 30,
   })
-  particleElements = []
-  particles = []
+  particleSystem.start()
+}
 
-  const particlePoolSize = isMobile.value ? 25 : 40
-  particleElements = []
+function toggleConnections() {
+  showConnections.value = !showConnections.value
+}
 
-  for (let i = 0; i < particlePoolSize; i++) {
-    const element = document.createElement('div')
-    element.style.position = 'absolute'
-    element.style.width = '3px'
-    element.style.height = '3px'
-    element.style.borderRadius = '50%'
-    element.style.backgroundColor = '#ffffff'
-    element.style.pointerEvents = 'none'
-    element.style.zIndex = '1000'
-    element.style.opacity = '0'
-    element.style.willChange = 'left, top, opacity'
-    containerRef.value.appendChild(element)
-    particleElements.push(element)
+function navigateToLocation(lat: number, lng: number) {
+  if (map) {
+    map.flyTo({ center: [lng, lat], zoom: isMobile.value ? 3 : 4, duration: 1500, essential: true })
   }
-
-  function createParticle(feature: any, element: HTMLDivElement) {
-    if (!map || !containerRef.value) return
-    const coords = feature.geometry.coordinates
-    const from = coords[0]
-    const to = coords[coords.length - 1]
-    const color = feature.properties.color || '#ffffff'
-
-    element.style.backgroundColor = color
-    element.style.boxShadow = `0 0 4px ${color}`
-    element.style.opacity = '0.9'
-
-    const pixelCoords = map.project(from)
-    element.style.left = `${pixelCoords.x}px`
-    element.style.top = `${pixelCoords.y}px`
-
-    particles.push({
-      element,
-      from,
-      to,
-      progress: 0,
-      speed: 0.003 + Math.random() * 0.006,
-    })
-  }
-
-  let lastTime = 0
-  const throttleInterval = 16
-
-  function animate(timestamp: number) {
-    if (!isMounted) return
-    if (!map) return
-    animationFrameId = requestAnimationFrame(animate)
-
-    if (timestamp - lastTime < throttleInterval) return
-    lastTime = timestamp
-
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i]
-      p.progress += p.speed
-
-      if (p.progress >= 1) {
-        if (p.element) p.element.style.opacity = '0'
-        particles.splice(i, 1)
-        continue
-      }
-
-      const t = p.progress
-      const lng = p.from[0] + (p.to[0] - p.from[0]) * t
-      const lat = p.from[1] + (p.to[1] - p.from[1]) * t
-
-      try {
-        const pixelCoords = map.project([lng, lat])
-        if (p.element) {
-          p.element.style.left = `${pixelCoords.x}px`
-          p.element.style.top = `${pixelCoords.y}px`
-          const fadeStart = 0.8
-          const opacity = t < fadeStart ? 0.9 : 0.9 * (1 - (t - fadeStart) / (1 - fadeStart))
-          p.element.style.opacity = String(opacity)
-        }
-      } catch {
-        if (p.element) p.element.style.opacity = '0'
-        particles.splice(i, 1)
-      }
-    }
-
-    if (particles.length < particlePoolSize * 0.6 && Math.random() < 0.08) {
-      const unusedElement = particleElements.find(el => !particles.some((p: any) => p.element === el))
-      if (unusedElement) {
-        const feat = features[Math.floor(Math.random() * features.length)]
-        if (feat) createParticle(feat, unusedElement)
-      }
-    }
-  }
-
-  animationFrameId = requestAnimationFrame(animate)
 }
 
 function setupHexGrid() {
@@ -666,32 +649,29 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
       100% { transform: scale(0.95); opacity: 0; }
     }
     .maplibregl-popup-content {
-      background: rgba(0, 0, 0, 0.92) !important;
-      border-radius: 6px;
-      border: 1px solid rgba(6, 182, 212, 0.4);
-      box-shadow: 0 0 20px rgba(6, 182, 212, 0.25), inset 0 0 10px rgba(6, 182, 212, 0.08);
-      padding: 14px !important;
-      min-width: 180px;
-    }
-    .cyber-popup-species {
       background: rgba(0, 0, 0, 0.95) !important;
-      border-color: rgba(6, 182, 212, 0.5) !important;
-      box-shadow: 0 0 25px rgba(6, 182, 212, 0.3), inset 0 0 12px rgba(6, 182, 212, 0.1) !important;
+      border-radius: 8px !important;
+      border: 1px solid rgba(6, 182, 212, 0.4) !important;
+      box-shadow: 0 0 30px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05) !important;
+      padding: 0 !important;
+      min-width: 260px;
     }
     .maplibregl-popup-tip {
-      border-top-color: rgba(6, 182, 212, 0.7);
-      border-bottom-color: rgba(6, 182, 212, 0.7);
+      border-top-color: rgba(6, 182, 212, 0.7) !important;
+      border-bottom-color: rgba(6, 182, 212, 0.7) !important;
     }
     .maplibregl-popup-close-button {
-      color: rgba(6, 182, 212, 0.7);
-      font-size: 18px;
-      padding: 0 5px;
-      background: transparent;
-      border: none;
+      color: rgba(6, 182, 212, 0.8) !important;
+      font-size: 18px !important;
+      padding: 4px 8px !important;
+      background: transparent !important;
+      border: none !important;
+      top: 8px !important;
+      right: 8px !important;
     }
     .maplibregl-popup-close-button:hover {
-      background-color: rgba(6, 182, 212, 0.15);
-      color: rgba(6, 182, 212, 1);
+      background-color: rgba(6, 182, 212, 0.2) !important;
+      color: rgba(6, 182, 212, 1) !important;
     }
     .maplibregl-ctrl-bottom-right {
       margin-bottom: 5px;
@@ -710,7 +690,6 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
       background-color: transparent !important;
     }
     .globe-marker-item {
-      will-change: transform;
       transform: translateZ(0);
     }
     .star-field {
@@ -784,8 +763,310 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
       50% { opacity: 1; }
       100% { opacity: 0.7; }
     }
+    /* Project Popup Styles */
+    .project-popup-wrapper {
+      padding: 16px;
+      min-width: 240px;
+    }
+    .project-popup-header {
+      position: relative;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    .project-corner-accent {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(6, 182, 212, 0.5);
+    }
+    .project-corner-accent.top-left {
+      top: -4px;
+      left: -4px;
+      border-right: none;
+      border-bottom: none;
+    }
+    .project-corner-accent.top-right {
+      top: -4px;
+      right: -4px;
+      border-left: none;
+      border-bottom: none;
+    }
+    .project-header-content {
+      position: relative;
+      z-index: 1;
+    }
+    .project-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .project-badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(6, 182, 212, 0.9);
+      background: rgba(6, 182, 212, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .project-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .project-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f0f0f0;
+      line-height: 1.4;
+      margin: 0;
+    }
+    .project-header-line {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(6, 182, 212, 0.4), rgba(168, 85, 247, 0.4), transparent);
+      margin-top: 12px;
+    }
+    .project-popup-body {
+      padding: 0 4px;
+    }
+    .project-stat-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .project-stat-icon {
+      color: rgba(6, 182, 212, 0.7);
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .project-stat-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .project-stat-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .project-stat-value {
+      font-size: 13px;
+      color: #d1d5db;
+    }
+    .project-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 12px 0;
+    }
+    .project-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .project-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .project-metric-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .project-metric-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .project-metric-value.direct {
+      color: #22d3ee;
+    }
+    .project-metric-value.indirect {
+      color: #a855f7;
+    }
+    .project-popup-footer {
+      margin-top: 12px;
+      height: 3px;
+      position: relative;
+    }
+    .project-footer-glow {
+      height: 100%;
+      width: 60%;
+      opacity: 0.4;
+      filter: blur(2px);
+    }
+    /* Species Popup Styles */
+    .species-popup-wrapper {
+      padding: 0;
+      min-width: 280px;
+      overflow: hidden;
+    }
+    .species-header {
+      position: relative;
+      padding: 16px;
+      border-bottom: 1px solid;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .species-header-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .species-ornament {
+      margin-bottom: 8px;
+    }
+    .species-ornament.top {
+      margin-bottom: 12px;
+    }
+    .species-ornament.bottom {
+      margin-top: 12px;
+      margin-bottom: 0;
+    }
+    .species-badges {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .species-category-badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+    .species-group-badge {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid;
+      background: transparent;
+    }
+    .species-common-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f5f5f5;
+      margin: 0 0 4px 0;
+      line-height: 1.3;
+      position: relative;
+      z-index: 1;
+    }
+    .species-scientific-name {
+      font-size: 12px;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.6);
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .species-body {
+      padding: 14px 16px;
+    }
+    .species-description {
+      font-size: 12px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.75);
+      margin: 0 0 14px 0;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+    .species-details {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .species-detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .species-detail-row.endangerment {
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 4px;
+    }
+    .species-detail-icon {
+      color: rgba(6, 182, 212, 0.8);
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .species-detail-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+    }
+    .species-detail-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .species-detail-value {
+      font-size: 12px;
+      color: #d1d5db;
+    }
+    .species-threat-tag {
+      display: inline-block;
+      font-size: 10px;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
+    .endangerment-value {
+      font-weight: 600;
+    }
+    .species-footer {
+      padding: 0 16px 12px;
+    }
+    .species-footer-line {
+      height: 2px;
+      opacity: 0.6;
+    }
   `
   document.head.appendChild(style)
+}
+
+// Add fade transition and gradient animation
+if (typeof document !== 'undefined' && !document.getElementById('globe-transition-styles')) {
+  const styleSheet = document.createElement('style')
+  styleSheet.id = 'globe-transition-styles'
+  styleSheet.textContent = `
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.3s ease;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .animate-gradient-shift {
+      background-size: 200% 200%;
+      animation: gradientShift 8s ease infinite;
+    }
+  `
+  document.head.appendChild(styleSheet)
 }
 
 onMounted(() => {
@@ -793,14 +1074,25 @@ onMounted(() => {
   window.addEventListener('resize', debouncedSetupHexGrid)
 })
 
+watch(locale, () => {
+  rebuildMarkers()
+})
+
+watch(isHexGridVisible, async (visible) => {
+  if (!visible) return
+  await nextTick()
+  setupHexGrid()
+})
+
+watch(showConnections, () => {
+  addConnections()
+  if (showConnections.value) startParticles()
+})
+
 onUnmounted(() => {
   isMounted = false
-  if (animationFrameId) cancelAnimationFrame(animationFrameId)
-  if (markerVisibilityCheckTimer) clearInterval(markerVisibilityCheckTimer)
+  cleanupParticles()
   if (hexGridDebounceTimer) clearTimeout(hexGridDebounceTimer)
-  particleElements.forEach(el => {
-    if (el.parentNode) el.parentNode.removeChild(el)
-  })
   markers.forEach(m => m.remove())
   if (map) {
     map.remove()

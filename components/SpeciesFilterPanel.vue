@@ -1,7 +1,7 @@
 <template>
   <div
-    :class="`absolute ${isMobile ? 'top-20 left-4 right-4' : 'top-20 left-4'} z-[600] panel-cyber rounded-lg p-3 species-filter-panel transition-all duration-300`"
-    :style="{ maxWidth: isMobile ? 'none' : '340px', zIndex: 'var(--z-map-ui-controls)' }"
+    :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)]' : 'top-20 right-16 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 species-filter-panel transition-all duration-300`"
+    :style="{ zIndex: 'var(--z-map-ui-controls)' }"
   >
     <!-- Header -->
     <div class="flex justify-between items-center mb-3">
@@ -15,6 +15,15 @@
         </span>
       </div>
       <UiButton
+        v-if="isMobile"
+        variant="ghost"
+        size="icon"
+        class="h-7 w-7 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 rounded"
+        @click="isCollapsed = !isCollapsed"
+      >
+        <iconify-icon :icon="isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'" class="h-4 w-4" />
+      </UiButton>
+      <UiButton
         v-if="hasActiveFilters"
         variant="ghost"
         size="sm"
@@ -26,6 +35,7 @@
       </UiButton>
     </div>
 
+    <div v-if="!isCollapsed" :class="isMobile ? 'max-h-[calc(100svh-13rem)] overflow-y-auto pr-1' : 'max-h-[calc(100svh-9rem)] overflow-y-auto pr-1'">
     <!-- Search Input with enhanced UX -->
     <div class="mb-3">
       <div class="relative">
@@ -52,15 +62,15 @@
       <button
         v-for="(group, index) in taxonomicGroups.slice(0, 4)"
         :key="group"
-        @click="toggleQuickFilter('taxonomicGroup', group)"
+        @click="toggleTaxonomicGroup(group)"
         :class="`px-2 py-1 rounded text-[10px] font-medium transition-all duration-200 ${
-          filters.taxonomicGroup === group
+          selectedTaxonomicGroups.includes(group)
             ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
             : 'bg-black/30 text-gray-400 border border-gray-700/50 hover:border-cyan-700/50 hover:text-cyan-400'
         }`"
         :style="{ animationDelay: `${index * 50}ms` }"
       >
-        {{ group }}
+        {{ groupLabel(group) }}
       </button>
       <button
         v-if="taxonomicGroups.length > 4"
@@ -76,14 +86,14 @@
       <button
         v-for="group in taxonomicGroups.slice(4)"
         :key="group"
-        @click="toggleQuickFilter('taxonomicGroup', group)"
+        @click="toggleTaxonomicGroup(group)"
         :class="`px-2 py-1 rounded text-[10px] font-medium transition-all duration-200 ${
-          filters.taxonomicGroup === group
+          selectedTaxonomicGroups.includes(group)
             ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
             : 'bg-black/30 text-gray-400 border border-gray-700/50 hover:border-cyan-700/50 hover:text-cyan-400'
         }`"
       >
-        {{ group }}
+        {{ groupLabel(group) }}
       </button>
     </div>
 
@@ -93,13 +103,27 @@
         {{ t('filter.taxonomicGroup') }}
       </label>
       <select
-        v-model="filters.taxonomicGroup"
+        value=""
+        @change="handleTaxonomicSelect"
         class="filter-select w-full px-2.5 py-1.5 bg-black/50 border border-cyan-900/50 rounded text-xs text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all cursor-pointer"
         :aria-label="t('filter.taxonomicGroup')"
       >
-        <option value="">{{ t('filter.allGroups') }}</option>
-        <option v-for="group in taxonomicGroups" :key="group" :value="group">{{ group }}</option>
+        <option value="">{{ selectedTaxonomicGroups.length ? t('filter.addGroup') : t('filter.allGroups') }}</option>
+        <option v-for="group in taxonomicGroups" :key="group" :value="group">
+          {{ selectedTaxonomicGroups.includes(group) ? t('filter.removeGroup', { group: groupLabel(group) }) : groupLabel(group) }}
+        </option>
       </select>
+      <div v-if="selectedTaxonomicGroups.length" class="mt-1.5 flex flex-wrap gap-1.5">
+        <button
+          v-for="group in selectedTaxonomicGroups"
+          :key="`selected-${group}`"
+          class="inline-flex items-center gap-1 rounded border border-cyan-500/40 bg-cyan-500/15 px-1.5 py-0.5 text-[10px] text-cyan-300"
+          @click="toggleTaxonomicGroup(group)"
+        >
+          {{ groupLabel(group) }}
+          <iconify-icon icon="lucide:x" class="h-3 w-3" />
+        </button>
+      </div>
     </div>
 
     <!-- Region Filter -->
@@ -154,16 +178,17 @@
           {{ t('filter.showing', { count: filteredCount, total: totalCount }) }}
         </p>
         <span class="text-[10px] font-medium text-cyan-400">
-          {{ Math.round((filteredCount / totalCount) * 100) }}%
+          {{ filteredPercent }}%
         </span>
       </div>
       <!-- Progress bar -->
       <div class="h-1 bg-gray-800 rounded-full overflow-hidden">
         <div
           class="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-300 ease-out"
-          :style="{ width: `${(filteredCount / totalCount) * 100}%` }"
+          :style="{ width: `${filteredPercent}%` }"
         />
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -184,6 +209,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'filter-change': [filteredSpecies: Species[]]
+  'group-selection-change': [groups: string[]]
 }>()
 
 const isMobile = useMediaQuery('(max-width: 768px)')
@@ -193,7 +219,6 @@ const { t } = useI18n()
 
 // Filter state
 const filters = reactive({
-  taxonomicGroup: '',
   region: '',
   ecosystem: '',
   threatType: '',
@@ -201,6 +226,12 @@ const filters = reactive({
 
 const searchQuery = ref('')
 const showAllGroups = ref(false)
+const selectedTaxonomicGroups = ref<string[]>([])
+const isCollapsed = ref(isMobile.value)
+
+watch(isMobile, (mobile) => {
+  isCollapsed.value = mobile
+})
 
 // Extract unique filter values from species data
 const taxonomicGroups = computed(() =>
@@ -228,7 +259,7 @@ const threatTypes = computed(() => {
 // Count active filters
 const activeFilterCount = computed(() => {
   let count = 0
-  if (filters.taxonomicGroup) count++
+  if (selectedTaxonomicGroups.value.length) count++
   if (filters.region) count++
   if (filters.ecosystem) count++
   if (filters.threatType) count++
@@ -239,21 +270,31 @@ const activeFilterCount = computed(() => {
 // Check if any filters are active
 const hasActiveFilters = computed(() => activeFilterCount.value > 0)
 
-// Toggle quick filter chip
-function toggleQuickFilter(filterKey: keyof typeof filters, value: string) {
-  if (filters[filterKey] === value) {
-    filters[filterKey] = ''
+function groupLabel(group: string) {
+  return t(`taxonomy.${group}`)
+}
+
+function toggleTaxonomicGroup(group: string) {
+  if (selectedTaxonomicGroups.value.includes(group)) {
+    selectedTaxonomicGroups.value = selectedTaxonomicGroups.value.filter(g => g !== group)
   } else {
-    filters[filterKey] = value
+    selectedTaxonomicGroups.value = [...selectedTaxonomicGroups.value, group]
   }
+}
+
+function handleTaxonomicSelect(event: Event) {
+  const group = (event.target as HTMLSelectElement).value
+  if (!group) return
+  toggleTaxonomicGroup(group)
+  ;(event.target as HTMLSelectElement).value = ''
 }
 
 // Apply filters to species
 const filteredSpecies = computed(() => {
   let result = props.species
 
-  if (filters.taxonomicGroup) {
-    result = result.filter(s => s.taxonomicGroup === filters.taxonomicGroup)
+  if (selectedTaxonomicGroups.value.length) {
+    result = result.filter(s => selectedTaxonomicGroups.value.includes(s.taxonomicGroup))
   }
   if (filters.region) {
     result = result.filter(s => s.region === filters.region)
@@ -271,6 +312,7 @@ const filteredSpecies = computed(() => {
       s.scientificName.toLowerCase().includes(query) ||
       s.region.toLowerCase().includes(query) ||
       s.taxonomicGroup.toLowerCase().includes(query) ||
+      groupLabel(s.taxonomicGroup).toLowerCase().includes(query) ||
       s.ecosystem.toLowerCase().includes(query)
     )
   }
@@ -280,21 +322,31 @@ const filteredSpecies = computed(() => {
 
 const filteredCount = computed(() => filteredSpecies.value.length)
 const totalCount = computed(() => props.species.length)
+const filteredPercent = computed(() => totalCount.value ? Math.round((filteredCount.value / totalCount.value) * 100) : 0)
 
 // Emit filtered species when filters change
 watch(filteredSpecies, (newFiltered) => {
   emit('filter-change', newFiltered)
 }, { immediate: true })
 
+watch(selectedTaxonomicGroups, (groups) => {
+  emit('group-selection-change', groups)
+}, { immediate: true })
+
 // Reset all filters
 function resetFilters() {
-  filters.taxonomicGroup = ''
+  selectedTaxonomicGroups.value = []
   filters.region = ''
   filters.ecosystem = ''
   filters.threatType = ''
   searchQuery.value = ''
   showAllGroups.value = false
 }
+
+defineExpose({
+  toggleTaxonomicGroup,
+  resetFilters,
+})
 </script>
 
 <style scoped>

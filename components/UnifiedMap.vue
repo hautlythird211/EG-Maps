@@ -1,82 +1,160 @@
 <template>
   <div class="w-full h-screen relative overflow-hidden bg-black" role="main" aria-label="Interactive Map Visualization">
+    <!-- Loading skeleton -->
+    <Transition name="fade">
+      <div v-if="isLoading" class="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
+        <div class="relative mb-6">
+          <div class="w-20 h-20 rounded-full border-4 border-cyan-500/20 border-t-cyan-500 animate-spin" />
+          <div class="absolute inset-0 w-20 h-20 rounded-full border-4 border-purple-500/20 border-b-purple-500 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
+        </div>
+        <p class="text-cyan-400 font-medium mb-2">{{ t('general.loading') }}</p>
+        <p class="text-gray-500 text-sm">{{ t('globe.preparingData', { dataset: activeDataset === 'project-grants' ? t('home.projectGrants').toLowerCase() : t('home.species').toLowerCase() }) }}</p>
+        <div class="mt-4 flex gap-1">
+          <div class="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style="animation-delay: 0ms" />
+          <div class="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style="animation-delay: 150ms" />
+          <div class="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style="animation-delay: 300ms" />
+        </div>
+      </div>
+    </Transition>
+
     <!-- Background effects -->
-    <div class="absolute inset-0 bg-gradient-to-b from-cyan-950/20 via-purple-950/10 to-emerald-950/20 pointer-events-none" :style="{ zIndex: 'var(--z-map-effects)' }" />
-    <div v-if="!isMobile" class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/10 via-transparent to-transparent pointer-events-none" :style="{ zIndex: 'var(--z-map-effects)' }" />
-    <div class="absolute inset-0 pointer-events-none" :style="{ zIndex: 'var(--z-map-overlays)', boxShadow: 'inset 0 0 200px 50px rgba(0,0,0,0.8)' }" />
+    <div class="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-green-900/20 pointer-events-none" :style="{ zIndex: 'var(--z-map-effects)' }" />
+    <div v-if="!isMobile" class="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-purple-900/20 pointer-events-none" :style="{ zIndex: 'var(--z-map-effects)' }" />
+
+    <!-- Grid overlay with image-set for 2x resolution -->
+    <div
+      class="absolute inset-0 pointer-events-none opacity-[0.03]"
+      :style="{
+        zIndex: 'calc(var(--z-map-effects) + 1)',
+        backgroundImage: 'image-set(url(/grid-overlay.png) 1x, url(/grid-overlay.png) 2x)',
+        backgroundRepeat: 'repeat',
+      }"
+    />
+
+    <!-- Noise overlay with image-set for 2x resolution -->
+    <div
+      class="absolute inset-0 pointer-events-none opacity-[0.02] animate-noise-bg"
+      :style="{
+        zIndex: 'calc(var(--z-map-effects) + 2)',
+        backgroundImage: 'image-set(url(/noise.png) 1x, url(/noise.png) 2x)',
+        backgroundRepeat: 'repeat',
+      }"
+    />
+
+    <!-- Scanline overlay with image-set for 2x resolution -->
+    <div
+      class="absolute inset-0 pointer-events-none opacity-[0.015]"
+      :style="{
+        zIndex: 'calc(var(--z-map-effects) + 3)',
+        backgroundImage: 'image-set(url(/scanline.gif) 1x, url(/scanline.gif) 2x)',
+        backgroundRepeat: 'repeat',
+      }"
+    />
+
+    <!-- Vignette -->
+    <div class="absolute inset-0 pointer-events-none" :style="{ zIndex: 'var(--z-map-overlays)', boxShadow: 'inset 0 0 150px 20px rgba(0,0,0,0.7)' }" />
 
     <!-- Hex grid overlay -->
-    <canvas v-if="showHexGrid" ref="hexCanvasRef" class="absolute inset-0 w-full h-full pointer-events-none opacity-15" :style="{ zIndex: 'var(--z-map-hex-grid)' }" />
+    <canvas v-if="showHexGrid" ref="hexCanvasRef" class="absolute inset-0 w-full h-full pointer-events-none opacity-20" :style="{ zIndex: 'var(--z-map-hex-grid)' }" />
 
     <!-- Animated background elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none" :style="{ zIndex: 'var(--z-map-effects)' }">
       <div :class="`absolute top-0 left-0 w-full h-full ${isMobile ? 'opacity-5' : 'opacity-10'}`">
-        <div class="absolute top-0 left-1/4 w-1/3 h-1/3 bg-cyan-500/20 blur-3xl animate-pulse-slow" />
+        <div class="absolute top-0 left-0 w-1/3 h-1/3 bg-cyan-500/20 blur-3xl animate-pulse-slow" />
         <template v-if="!isMobile">
-          <div class="absolute bottom-0 right-1/4 w-1/3 h-1/3 bg-purple-500/20 blur-3xl animate-pulse-slow-delay" />
-          <div class="absolute top-1/2 left-1/2 w-1/4 h-1/4 bg-emerald-500/15 blur-3xl animate-pulse-slow-delay-2" />
+          <div class="absolute bottom-0 right-0 w-1/3 h-1/3 bg-purple-500/20 blur-3xl animate-pulse-slow-delay" />
+          <div class="absolute top-1/2 right-1/4 w-1/4 h-1/4 bg-pink-500/20 blur-3xl animate-pulse-slow-delay-2" />
         </template>
       </div>
     </div>
 
     <!-- Earth Guardians Banner -->
-    <div v-if="isMobile" class="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none px-2" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[10vh] max-w-[200px] object-contain" loading="lazy" />
+    <div v-if="isMobile" class="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none px-2" :style="{ zIndex: 'var(--z-map-banner)' }">
+      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[240px] object-contain" loading="lazy" />
     </div>
     <div v-else class="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[150px] -rotate-90 origin-center" loading="lazy" />
+      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[15vh] max-w-[180px] -rotate-90 origin-center" loading="lazy" />
     </div>
 
     <!-- Map Container -->
-    <div ref="mapContainerRef" class="w-full h-full relative" :style="{ zIndex: 'var(--z-map-base)' }" />
+    <div ref="mapContainerRef" class="absolute inset-0 w-full h-full" />
 
-    <!-- Controls - 2D/3D toggle -->
-    <div class="absolute top-4 left-4" :style="{ zIndex: 'var(--z-map-ui-controls)' }">
-      <div class="panel-cyber rounded-lg p-2">
-        <div class="flex items-center gap-2">
+    <!-- Controls - 2D/3D toggle with enhanced styling -->
+    <div :class="`absolute ${isMobile ? 'top-[5.35rem] left-3' : 'top-4 left-4'}`" :style="{ zIndex: 'var(--z-map-ui-controls)' }">
+      <div class="map-view-switcher panel-cyber rounded-md p-1 flex items-center gap-1">
+        <div class="relative">
           <button
-            class="px-3 py-1.5 rounded-md text-sm font-medium transition-all bg-gradient-to-r from-cyan-600 to-purple-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+            :class="[
+              'map-view-tab relative overflow-hidden',
+              isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop',
+              is2DActive ? 'map-view-tab-active' : 'map-view-tab-idle'
+            ]"
             aria-current="page"
+            @click="setView('2d')"
           >
-            2D Map
+            <span class="relative z-10 flex items-center gap-2">
+              <iconify-icon icon="lucide:map" class="h-4 w-4" />
+              {{ t('globe.view2D') }}
+            </span>
           </button>
-          <NuxtLink
-            :to="`${datasetBaseRoute}/3d`"
-            class="px-3 py-1.5 rounded-md text-sm font-medium transition-all bg-black/50 text-cyan-400 hover:bg-cyan-950/30"
-            aria-label="Switch to 3D Globe view"
-          >
-            3D Globe
-          </NuxtLink>
+          <div
+            v-if="is2DActive"
+            class="pointer-events-none absolute inset-0 bg-gradient-to-r from-cyan-600 to-purple-600 opacity-0 transition-opacity duration-300"
+          />
         </div>
-      </div>
-    </div>
-
-    <!-- Dataset indicator -->
-    <div class="absolute top-4 left-1/2 -translate-x-1/2" :style="{ zIndex: 'var(--z-map-ui-controls)' }">
-      <div class="panel-cyber rounded-lg px-4 py-2">
-        <div class="flex items-center gap-2">
-          <div :class="`w-2 h-2 rounded-full ${activeDataset === 'project-grants' ? 'bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-green-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`" />
-          <span class="text-xs font-medium text-[var(--text-primary)]">
-            {{ activeDataset === 'project-grants' ? 'Project Grants' : 'Endangered Species' }}
-          </span>
-        </div>
+        <NuxtLink
+          :to="`${datasetBaseRoute}/3d`"
+          :class="[
+            'map-view-tab map-view-tab-idle',
+            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop'
+          ]"
+          :aria-label="t('globe.switchTo3D')"
+        >
+          <iconify-icon icon="lucide:globe" class="h-4 w-4" />
+          {{ t('globe.view3D') }}
+        </NuxtLink>
       </div>
     </div>
 
     <!-- Global Stats (for project grants only) -->
-    <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-0 w-full max-w-xl px-4 sm:px-0" :style="{ zIndex: 'var(--z-map-global-stats)' }">
-      <GlobalStats :projects="projectsData" />
+    <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-24 w-full max-w-xl px-3 sm:bottom-4 sm:px-4 lg:px-0" :style="{ zIndex: 'var(--z-map-global-stats)' }">
+      <GlobalStats :projects="visibleProjects" @close="() => {}" />
     </div>
 
+    <!-- Project filter panel -->
+    <ProjectFilterPanel
+      v-if="activeDataset === 'project-grants' && showFilterPanel"
+      :projects="projectsData"
+      @filter-change="handleProjectFilterChange"
+    />
+
+    <!-- Species filter panel (for endangered species) -->
+    <SpeciesFilterPanel
+      v-if="activeDataset === 'endangered-species' && showFilterPanel"
+      ref="speciesFilterPanelRef"
+      :species="speciesData"
+      @filter-change="handleFilterChange"
+      @group-selection-change="handleSpeciesGroupSelection"
+    />
+
     <!-- Species legend (for endangered species) -->
-    <div v-if="activeDataset === 'endangered-species'" class="absolute left-4 bottom-20 sm:bottom-4" :style="{ zIndex: 'var(--z-map-global-stats)' }">
-      <div class="panel-cyber rounded-lg p-3">
-        <h3 class="text-xs font-bold text-[var(--text-primary)] mb-2">Taxonomic Groups</h3>
+    <div v-if="activeDataset === 'endangered-species'" class="absolute left-3 bottom-24 sm:left-4 sm:bottom-4" :style="{ zIndex: 'var(--z-map-global-stats)' }">
+      <div class="panel-cyber rounded-lg p-3 transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+        <h3 class="text-xs font-bold text-[var(--text-primary)] mb-2 flex items-center gap-1.5">
+          <iconify-icon icon="lucide:layers" class="h-3.5 w-3.5 text-cyan-400" />
+          {{ t('globe.taxonomicGroups') }}
+        </h3>
         <div class="grid grid-cols-2 gap-1.5">
-          <div v-for="(color, group) in GROUP_COLORS" :key="group" class="flex items-center gap-1.5">
-            <div class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: color }" />
-            <span class="text-[10px] text-[var(--text-secondary)]">{{ group }}</span>
-          </div>
+          <button
+            v-for="(color, group) in GROUP_COLORS"
+            :key="group"
+            class="flex items-center gap-1.5 group cursor-pointer rounded px-1 py-0.5 text-left transition-colors hover:bg-cyan-500/10"
+            :class="selectedSpeciesGroups.includes(group) ? 'bg-cyan-500/15' : ''"
+            @click="toggleLegendGroup(group)"
+          >
+            <div class="w-2.5 h-2.5 rounded-full transition-transform duration-200 group-hover:scale-125" :style="{ backgroundColor: color }" />
+            <span class="text-[10px] text-[var(--text-secondary)] group-hover:text-cyan-400 transition-colors">{{ taxonomicGroupLabel(group) }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -85,35 +163,56 @@
     <MapControls
       :is-globe-view="false"
       :show-hex-grid="showHexGrid"
+      :show-connections="showConnections"
       :dataset="activeDataset"
-      :projects="activeDataset === 'project-grants' ? projectsData : undefined"
-      :species="activeDataset === 'endangered-species' ? speciesData : undefined"
+      :projects="activeDataset === 'project-grants' ? visibleProjects : undefined"
+      :species="activeDataset === 'endangered-species' ? visibleSpecies : undefined"
+      :filter-open="showFilterPanel"
       @toggle-hex-grid="showHexGrid = !showHexGrid"
+      @toggle-connections="toggleConnections"
+      @toggle-filter="showFilterPanel = !showFilterPanel"
+      @search-open-change="handleSearchOpenChange"
       @navigate="navigateToLocation"
       :style="{ zIndex: 'var(--z-map-ui-controls)' }"
     />
 
     <!-- Error state -->
-    <div v-if="hasError" class="absolute inset-0 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center text-white" :style="{ zIndex: 'var(--z-map-error-overlay)' }">
-      <div class="h-16 w-16 rounded-full bg-gradient-to-r from-red-500 to-orange-600 animate-pulse mb-6" />
-      <h2 class="text-xl font-bold mb-2">Unable to Load Map</h2>
-      <p class="text-gray-400 mb-4 text-center px-4">The map could not be initialized. Please check your connection and try again.</p>
-      <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-lg text-white font-medium hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-        Try Again
-      </button>
-    </div>
+    <Transition name="fade">
+      <div v-if="hasError" class="absolute inset-0 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center text-white z-[var(--z-map-error-overlay)]">
+        <div class="relative mb-6">
+          <div class="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-orange-600 animate-pulse" />
+          <iconify-icon icon="lucide:alert-triangle" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-white" />
+        </div>
+        <h2 class="text-xl font-bold mb-2">{{ t('globe.unableToLoad') }}</h2>
+        <p class="text-gray-400 mb-4 text-center px-4 max-w-md">{{ t('globe.connectionError') }}</p>
+        <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-lg text-white font-medium hover:opacity-90 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] flex items-center gap-2">
+          <iconify-icon icon="lucide:refresh-cw" class="h-4 w-4" />
+          {{ t('globe.tryAgain') }}
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
 import { useMediaQuery } from '@/composables/useMediaQuery'
+import { useI18n } from '@/composables/useI18n'
 import { allProjectsData } from '@/lib/project-data'
 import type { ProjectData } from '@/lib/types'
 import { getProjectColorByBeneficiaries } from '@/lib/colors'
 import type { Species } from '@/lib/map-utils'
-import { buildProjectPopupHTML, buildSpeciesPopupHTML, isValidCoordinate, generateCurvedPath, GROUP_COLORS } from '@/lib/map-utils'
+import { buildProjectPopupHTML, buildSpeciesPopupHTML, isValidCoordinate, GROUP_COLORS } from '@/lib/map-utils'
+import {
+  buildMapConnectionFeatures,
+  createMapParticleSystem,
+  syncMapConnectionLayers,
+  type MapConnectionFeature,
+  type MapParticleSystem,
+} from '@/lib/map-effects'
+
+const { t, locale } = useI18n()
 
 const MAPTILER_API_KEY = useRuntimeConfig().public.maptilerApiKey || ''
 
@@ -141,6 +240,10 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const projectsData = computed(() => props.projects || allProjectsData)
 const speciesData = computed(() => props.species || [])
+const filteredProjectsList = ref<ProjectData[] | null>(null)
+const filteredSpeciesList = ref<Species[] | null>(null)
+const visibleProjects = computed(() => filteredProjectsList.value ?? projectsData.value)
+const visibleSpecies = computed(() => filteredSpeciesList.value ?? speciesData.value)
 
 // Base route for dataset navigation (without /3d suffix)
 const datasetBaseRoute = computed(() => {
@@ -150,80 +253,221 @@ const datasetBaseRoute = computed(() => {
 const isMobile = useMediaQuery('(max-width: 768px)')
 const mapContainerRef = ref<HTMLDivElement | null>(null)
 const hexCanvasRef = ref<HTMLCanvasElement | null>(null)
+const speciesFilterPanelRef = ref<{ toggleTaxonomicGroup: (group: string) => void } | null>(null)
+const selectedSpeciesGroups = ref<string[]>([])
 const showHexGrid = ref(true)
+const showConnections = ref(true)
+const showFilterPanel = ref(false)
 const activeDataset = ref<'project-grants' | 'endangered-species'>(props.defaultDataset)
 const hasError = ref(false)
+const isLoading = ref(true)
+const is2DActive = ref(true)
 
-function createProjectMarkerElement(project: ProjectData): HTMLElement {
-  const beneficiaryFactor = Math.min(Math.max(project.indirect_beneficiaries / 10000, 0.5), 5)
-  const markerSize = 15 + beneficiaryFactor * 10
-  const color = getProjectColorByBeneficiaries(project.direct_beneficiaries, project.indirect_beneficiaries)
+let map: maplibregl.Map | null = null
+let markers: maplibregl.Marker[] = []
+let pendingVisibilityUpdate = false
+let connectionFeatures: MapConnectionFeature[] = []
+let particleSystem: MapParticleSystem | null = null
 
+function taxonomicGroupLabel(group: string) {
+  return t(`taxonomy.${group}`)
+}
+
+function getTaxonomicGroupLabels() {
+  return Object.keys(GROUP_COLORS).reduce<Record<string, string>>((labels, group) => {
+    labels[group] = taxonomicGroupLabel(group)
+    return labels
+  }, {})
+}
+
+function getLocalizedSpecies(species: Species): Species {
+  const content = species.content?.[locale.value] ?? species.content?.en
+  if (!content) return species
+
+  return {
+    ...species,
+    description: content.description ?? species.description,
+    endangerment: content.endangerment ?? species.endangerment,
+    ecosystemNeeds: content.ecosystemNeeds ?? species.ecosystemNeeds,
+    actions: content.actions ?? species.actions,
+    region: content.region ?? species.region,
+  }
+}
+
+function toggleLegendGroup(group: string | number) {
+  speciesFilterPanelRef.value?.toggleTaxonomicGroup(String(group))
+}
+
+function handleSpeciesGroupSelection(groups: string[]) {
+  selectedSpeciesGroups.value = groups
+}
+
+function createPopup(maxWidth: string) {
+  const popup = new maplibregl.Popup({
+    closeButton: true,
+    closeOnClick: true,
+    focusAfterOpen: false,
+    maxWidth,
+    offset: 14,
+    className: 'cyberpunk-popup'
+  })
+
+  popup.on('open', () => {
+    requestAnimationFrame(() => keepPopupFullyVisible(popup))
+  })
+
+  return popup
+}
+
+function keepPopupFullyVisible(popup: maplibregl.Popup) {
+  if (!map) return
+
+  const popupEl = popup.getElement()
+  if (!popupEl) return
+
+  popupEl.style.zIndex = '2147483000'
+
+  const fit = () => {
+    const rect = popupEl.getBoundingClientRect()
+    const margin = 12
+    let panX = 0
+    let panY = 0
+
+    if (rect.left < margin) panX = rect.left - margin
+    else if (rect.right > window.innerWidth - margin) panX = rect.right - window.innerWidth + margin
+
+    if (rect.top < margin) panY = rect.top - margin
+    else if (rect.bottom > window.innerHeight - margin) panY = rect.bottom - window.innerHeight + margin
+
+    if (panX || panY) {
+      map?.panBy([panX, panY], { duration: 220 })
+    }
+  }
+
+  fit()
+  window.setTimeout(fit, 260)
+}
+
+function setView(view: '2d' | '3d') {
+  is2DActive.value = view === '2d'
+}
+
+function handleFilterChange(filtered: Species[]) {
+  filteredSpeciesList.value = filtered
+  rebuildMarkers()
+  addConnections()
+  if (showConnections.value) startParticles()
+}
+
+function handleProjectFilterChange(filtered: ProjectData[]) {
+  filteredProjectsList.value = filtered
+  rebuildMarkers()
+  addConnections()
+  if (showConnections.value) startParticles()
+}
+
+function handleSearchOpenChange(open: boolean) {
+  if (open && isMobile.value) {
+    showFilterPanel.value = false
+  }
+}
+
+function toggleConnections() {
+  showConnections.value = !showConnections.value
+}
+
+function getUnifiedMarkerMetrics(options: {
+  color: string
+  size: number
+  centerScale?: number
+  imageUrl?: string
+}) {
+  const hitSize = Math.max(34, Math.round(options.size + 12))
+  const visualSize = Math.round(options.size)
+
+  return {
+    hitSize,
+    visualSize,
+    color: options.color,
+    centerSize: Math.max(7, Math.round(visualSize * (options.centerScale ?? 0.42))),
+    imageUrl: options.imageUrl,
+  }
+}
+
+function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerMetrics>) {
   const el = document.createElement('div')
-  el.style.width = `${markerSize}px`
-  el.style.height = `${markerSize}px`
+  el.style.width = `${metrics.hitSize}px`
+  el.style.height = `${metrics.hitSize}px`
   el.style.display = 'flex'
   el.style.justifyContent = 'center'
   el.style.alignItems = 'center'
   el.style.cursor = 'pointer'
-  el.style.transition = 'all 0.2s ease'
-  el.style.willChange = 'transform'
+  el.style.pointerEvents = 'auto'
+  el.style.zIndex = '1'
 
-  const innerWrapper = document.createElement('div')
-  innerWrapper.style.width = '100%'
-  innerWrapper.style.height = '100%'
-  innerWrapper.style.borderRadius = '50%'
-  innerWrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
-  innerWrapper.style.border = `2px solid ${color}`
-  innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 12}px ${color}`
-  innerWrapper.style.display = 'flex'
-  innerWrapper.style.justifyContent = 'center'
-  innerWrapper.style.alignItems = 'center'
-  innerWrapper.style.position = 'relative'
-  innerWrapper.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease'
-  innerWrapper.style.willChange = 'transform'
-  el.appendChild(innerWrapper)
+  const inner = document.createElement('div')
+  inner.style.width = `${metrics.visualSize}px`
+  inner.style.height = `${metrics.visualSize}px`
+  inner.style.borderRadius = '50%'
+  inner.style.backgroundColor = 'rgba(0, 0, 0, 0.82)'
+  inner.style.border = '2px solid rgba(255, 255, 255, 0.86)'
+  inner.style.boxShadow = `0 0 ${Math.max(8, metrics.visualSize * 0.5)}px ${metrics.color}, 0 0 1.5px #fff`
+  inner.style.display = 'flex'
+  inner.style.justifyContent = 'center'
+  inner.style.alignItems = 'center'
+  inner.style.position = 'relative'
+  inner.style.overflow = 'hidden'
+  inner.style.transition = 'transform 160ms ease, box-shadow 160ms ease'
+  inner.style.transform = 'translateZ(0) scale(1)'
 
-  const centerDot = document.createElement('div')
-  centerDot.style.width = `${markerSize * 0.45}px`
-  centerDot.style.height = `${markerSize * 0.45}px`
-  centerDot.style.backgroundColor = color
-  centerDot.style.borderRadius = '50%'
-  centerDot.style.boxShadow = `0 0 ${beneficiaryFactor * 2}px ${color}`
-  innerWrapper.appendChild(centerDot)
+  if (metrics.imageUrl) {
+    inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${metrics.imageUrl}")`
+    inner.style.backgroundSize = 'cover'
+    inner.style.backgroundPosition = 'center'
+  } else {
+    const centerDot = document.createElement('div')
+    centerDot.style.width = `${metrics.centerSize}px`
+    centerDot.style.height = `${metrics.centerSize}px`
+    centerDot.style.backgroundColor = metrics.color
+    centerDot.style.borderRadius = '50%'
+    centerDot.style.boxShadow = `0 0 ${Math.max(3, metrics.centerSize * 0.5)}px ${metrics.color}`
+    inner.appendChild(centerDot)
+  }
+
+  el.appendChild(inner)
 
   el.addEventListener('mouseenter', () => {
-    innerWrapper.style.transform = 'scale(1.25)'
-    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 25}px ${color}, 0 0 ${beneficiaryFactor * 5}px #fff`
+    inner.style.transform = 'translateZ(0) scale(1.28)'
+    inner.style.boxShadow = `0 0 ${Math.max(16, metrics.visualSize * 0.9)}px ${metrics.color}, 0 0 4px #fff`
+    el.style.zIndex = '10'
   })
 
   el.addEventListener('mouseleave', () => {
-    innerWrapper.style.transform = 'scale(1)'
-    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 12}px ${color}`
+    inner.style.transform = 'translateZ(0) scale(1)'
+    inner.style.boxShadow = `0 0 ${Math.max(8, metrics.visualSize * 0.5)}px ${metrics.color}, 0 0 1.5px #fff`
+    el.style.zIndex = '1'
   })
 
   return el
 }
 
+function createProjectMarkerElement(project: ProjectData): HTMLElement {
+  const totalBeneficiaries = project.direct_beneficiaries + project.indirect_beneficiaries
+  const beneficiaryFactor = Math.min(Math.max(totalBeneficiaries / 10000, 0.5), 5)
+  const markerSize = 15 + beneficiaryFactor * 10
+  const color = getProjectColorByBeneficiaries(project.direct_beneficiaries, project.indirect_beneficiaries)
+
+  return createUnifiedMarkerElement(getUnifiedMarkerMetrics({ color, size: markerSize }))
+}
+
 function createSpeciesMarkerElement(species: Species): HTMLElement {
   const color = GROUP_COLORS[species.taxonomicGroup] ?? '#B64030'
-  const markerSize = 12
-
-  const el = document.createElement('div')
-  el.style.width = `${markerSize}px`
-  el.style.height = `${markerSize}px`
-  el.style.borderRadius = '50%'
-  el.style.backgroundColor = color
-  el.style.border = '2px solid rgba(255,255,255,0.9)'
-  el.style.boxShadow = `0 0 6px ${color}40`
-  el.style.cursor = 'pointer'
-  el.style.transition = 'transform 0.15s ease'
-  el.style.willChange = 'transform'
-
-  el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.4)' })
-  el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)' })
-
-  return el
+  return createUnifiedMarkerElement(getUnifiedMarkerMetrics({
+    color,
+    size: species.imageUrl ? 26 : 20,
+    centerScale: 0.62,
+    imageUrl: species.imageUrl,
+  }))
 }
 
 function rebuildMarkers() {
@@ -233,17 +477,42 @@ function rebuildMarkers() {
   markers.forEach(m => m.remove())
   markers = []
 
+  // Translation objects for popups
+  const projectPopupTranslations = {
+    projectGrantee: t('stats.projectGrantees'),
+    directBeneficiaries: t('stats.directBeneficiaries'),
+    indirectBeneficiaries: t('stats.indirectBeneficiaries'),
+    location: t('project.location'),
+    status: t('project.status'),
+    unknownLocation: t('project.unknownLocation')
+  }
+  const speciesPopupTranslations = {
+    scientificName: t('species.scientificName'),
+    threatTypes: t('species.threatTypes'),
+    population: t('species.population'),
+    habitat: t('species.habitat'),
+    region: t('filter.region'),
+    ecosystem: t('filter.ecosystem'),
+    groupLabels: getTaxonomicGroupLabels()
+  }
+
   if (activeDataset.value === 'project-grants') {
-    projectsData.value.forEach((project) => {
+    visibleProjects.value.forEach((project) => {
       if (!isValidCoordinate(project.latitude, project.longitude)) return
 
       const el = createProjectMarkerElement(project)
       const popup = new maplibregl.Popup({
         closeButton: true,
         closeOnClick: true,
-        maxWidth: '320px',
+        focusAfterOpen: false,
+        maxWidth: 'min(420px, calc(100vw - 24px))',
+        offset: 14,
         className: 'cyberpunk-popup'
-      }).setHTML(buildProjectPopupHTML(project))
+      }).setHTML(buildProjectPopupHTML(project, projectPopupTranslations))
+
+      popup.on('open', () => {
+        requestAnimationFrame(() => keepPopupFullyVisible(popup))
+      })
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([project.longitude, project.latitude])
@@ -252,18 +521,15 @@ function rebuildMarkers() {
 
       markers.push(marker)
     })
-  } else if (activeDataset.value === 'endangered-species' && props.species) {
-    props.species.forEach((species) => {
+  } else if (activeDataset.value === 'endangered-species') {
+    visibleSpecies.value.forEach((species) => {
       if (!isValidCoordinate(species.lat, species.lng)) return
 
       const el = createSpeciesMarkerElement(species)
+      const localizedSpecies = getLocalizedSpecies(species)
 
-      const popup = new maplibregl.Popup({
-        closeButton: true,
-        closeOnClick: true,
-        maxWidth: '380px',
-        className: 'cyberpunk-popup'
-      }).setHTML(buildSpeciesPopupHTML(species))
+      const popup = createPopup('min(560px, calc(100vw - 24px))')
+        .setHTML(buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations))
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([species.lng, species.lat])
@@ -273,80 +539,97 @@ function rebuildMarkers() {
       markers.push(marker)
     })
   }
+
+  updateMarkerVisibility()
+}
+
+function updateMarkerVisibility() {
+  if (!map) return
+
+  const canvas = map.getCanvas()
+  const margin = 50
+  const bounds = {
+    minX: -margin,
+    maxX: canvas.width + margin,
+    minY: -margin,
+    maxY: canvas.height + margin
+  }
+
+  // Batch DOM updates - only change what actually changed
+  markers.forEach(marker => {
+    const el = marker.getElement()
+    try {
+      const point = map!.project(marker.getLngLat())
+      if (!point || isNaN(point.x) || isNaN(point.y)) {
+        el.style.display = 'none'
+        el.style.pointerEvents = 'none'
+        return
+      }
+
+      const isVisible = (
+        point.x >= bounds.minX &&
+        point.x <= bounds.maxX &&
+        point.y >= bounds.minY &&
+        point.y <= bounds.maxY
+      )
+
+      // Only update DOM if state changed
+      const wasVisible = el.style.display !== 'none'
+      if (isVisible !== wasVisible) {
+        el.style.display = isVisible ? '' : 'none'
+        el.style.pointerEvents = isVisible ? '' : 'none'
+      }
+    } catch {
+      el.style.display = 'none'
+      el.style.pointerEvents = 'none'
+    }
+  })
 }
 
 function addConnections() {
   if (!map) return
 
-  // Clear existing
-  if (map.getLayer('connections-layer')) map.removeLayer('connections-layer')
-  if (map.getSource('connections-source')) map.removeSource('connections-source')
+  cleanupParticles()
 
-  // Only add connections for project-grants dataset
-  if (activeDataset.value !== 'project-grants') return
+  if (!showConnections.value) {
+    connectionFeatures = []
+    syncMapConnectionLayers(map, [])
+    return
+  }
 
-  const maxConnectionsPerProject = isMobile.value ? 2 : 3
-  const projectsToProcess = isMobile.value ? projectsData.value.slice(0, Math.min(15, projectsData.value.length)) : projectsData.value
-  const features: any[] = []
-
-  // Use a seeded approach for deterministic connections
-  projectsToProcess.forEach((project, idx) => {
-    const availableTargets = projectsToProcess.filter(p => p.project_title !== project.project_title && isValidCoordinate(p.latitude, p.longitude))
-    const connectionsToMake = Math.min(maxConnectionsPerProject, availableTargets.length)
-
-    // Use index-based selection for deterministic results
-    for (let i = 0; i < connectionsToMake; i++) {
-      const targetIndex = (idx + i + 1) % availableTargets.length
-      const target = availableTargets[targetIndex]
-      if (target) {
-        const controlPoint = generateCurvedPath(
-          [project.longitude, project.latitude],
-          [target.longitude, target.latitude]
-        )
-        const color = getProjectColorByBeneficiaries(project.direct_beneficiaries, project.indirect_beneficiaries)
-        features.push({
-          type: 'Feature',
-          properties: { color },
-          geometry: {
-            type: 'LineString',
-            coordinates: [
-              [project.longitude, project.latitude],
-              controlPoint,
-              [target.longitude, target.latitude]
-            ]
-          }
-        })
-      }
-    }
+  connectionFeatures = buildMapConnectionFeatures({
+    dataset: activeDataset.value,
+    projects: visibleProjects.value,
+    species: visibleSpecies.value,
+    isMobile: isMobile.value,
   })
 
-  if (features.length === 0) return
+  syncMapConnectionLayers(map, connectionFeatures)
+}
 
-  map.addSource('connections-source', {
-    type: 'geojson',
-    data: {
-      type: 'FeatureCollection',
-      features
-    }
-  })
+function cleanupParticles() {
+  particleSystem?.stop()
+  particleSystem = null
+}
 
-  map.addLayer({
-    id: 'connections-layer',
-    type: 'line',
-    source: 'connections-source',
-    layout: { 'line-join': 'round', 'line-cap': 'round' },
-    paint: {
-      'line-color': ['get', 'color'],
-      'line-width': 2,
-      'line-opacity': 0.2,
-      'line-dasharray': [0.5, 2]
-    }
+function startParticles() {
+  if (!showConnections.value || !map || !mapContainerRef.value || !connectionFeatures.length) return
+
+  cleanupParticles()
+
+  particleSystem = createMapParticleSystem({
+    map,
+    container: mapContainerRef.value,
+    getFeatures: () => connectionFeatures,
+    isMobile: () => isMobile.value,
+    zIndex: 2,
   })
+  particleSystem.start()
 }
 
 function navigateToLocation(lat: number, lng: number) {
   if (map) {
-    map.flyTo({ center: [lng, lat], zoom: 6, duration: 1500 })
+    map.flyTo({ center: [lng, lat], zoom: 6, duration: 1500, essential: true })
   }
 }
 
@@ -354,10 +637,14 @@ function setupHexGrid() {
   const canvas = hexCanvasRef.value
   if (!canvas) return
 
-  canvas.width = window.innerWidth
-  canvas.height = window.innerHeight
+  const dpr = window.devicePixelRatio || 1
+  canvas.width = window.innerWidth * dpr
+  canvas.height = window.innerHeight * dpr
+  canvas.style.width = `${window.innerWidth}px`
+  canvas.style.height = `${window.innerHeight}px`
   const ctx = canvas.getContext('2d')
   if (!ctx) return
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
   const hexSize = isMobile.value ? 35 : 50
   const hexHeight = hexSize * Math.sqrt(3)
@@ -374,7 +661,7 @@ function setupHexGrid() {
     for (let col = 0; col < columns; col++) {
       const x = col * hexHorizontalOffset
       const y = row * hexVerticalOffset + (col % 2 === 0 ? 0 : hexHeight / 2)
-      if (x < -hexWidth || x > canvas.width + hexWidth || y < -hexHeight || y > canvas.height + hexHeight) continue
+      if (x < -hexWidth || x > window.innerWidth + hexWidth || y < -hexHeight || y > window.innerHeight + hexHeight) continue
 
       ctx.beginPath()
       for (let i = 0; i < 6; i++) {
@@ -411,6 +698,8 @@ function initMap() {
     map = null
   }
 
+  isLoading.value = true
+
   try {
     map = new maplibregl.Map({
       container: mapContainerRef.value,
@@ -418,6 +707,9 @@ function initMap() {
       zoom: isMobile.value ? 1.8 : 3,
       center: [0, 0],
       attributionControl: false,
+      renderWorldCopies: true,
+      minZoom: isMobile.value ? 0.5 : 1.5,
+      maxZoom: isMobile.value ? 8 : 9,
       fadeDuration: 100,
       maxTileCacheSize: 200,
       maxTileCacheZoomLevels: 5,
@@ -435,29 +727,93 @@ function initMap() {
     }
 
     map.on('load', () => {
+      isLoading.value = false
       rebuildMarkers()
       addConnections()
+      startParticles()
       setupHexGrid()
     })
 
+    map.on('move', () => {
+      // Throttle with RAF - only process visibility once per frame
+      if (!pendingVisibilityUpdate) {
+        pendingVisibilityUpdate = true
+        requestAnimationFrame(() => {
+          updateMarkerVisibility()
+          pendingVisibilityUpdate = false
+        })
+      }
+    })
+
+    map.on('moveend', () => {
+      updateMarkerVisibility()
+    })
+
+    map.on('resize', () => {
+      debouncedSetupHexGrid()
+    })
+
+    let errorCount = 0
+    let usedFallback = false
+
     map.on('error', (err) => {
       console.error('MapLibre error:', err)
-      hasError.value = true
+      errorCount++
+      // Retry with fallback style once if we get tile/style load errors
+      if (!usedFallback && errorCount >= 2 && MAP_STYLE.includes('maptiler.com')) {
+        usedFallback = true
+        console.warn('MapTiler style failed, falling back to demotiles style')
+        map.setStyle('https://demotiles.maplibre.org/style.json')
+        return
+      }
+      if (!map?.loaded()) {
+        isLoading.value = false
+        hasError.value = true
+      }
     })
+
+    // Timeout fallback for loading
+    setTimeout(() => {
+      if (isLoading.value) {
+        isLoading.value = false
+      }
+    }, 10000)
 
     window.addEventListener('resize', debouncedSetupHexGrid)
   } catch (err) {
     console.error('Failed to initialize map:', err)
+    isLoading.value = false
     hasError.value = true
   }
 }
 
 onMounted(() => {
+  showFilterPanel.value = !isMobile.value
   initMap()
+})
+
+watch(isMobile, (mobile) => {
+  showFilterPanel.value = !mobile
+})
+
+watch(locale, () => {
+  rebuildMarkers()
+})
+
+watch(showHexGrid, async (visible) => {
+  if (!visible) return
+  await nextTick()
+  setupHexGrid()
+})
+
+watch(showConnections, () => {
+  addConnections()
+  if (showConnections.value) startParticles()
 })
 
 onUnmounted(() => {
   if (hexGridDebounceTimer) clearTimeout(hexGridDebounceTimer)
+  cleanupParticles()
   markers.forEach(m => m.remove())
   markers = []
   if (map) {
@@ -468,52 +824,83 @@ onUnmounted(() => {
 </script>
 
 <style>
-.maplibregl-popup-content {
-  background: rgba(0, 0, 0, 0.9) !important;
-  border-radius: 4px;
-  border: 1px solid rgba(6, 182, 212, 0.5);
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), inset 0 0 10px rgba(6, 182, 212, 0.1);
-  padding: 16px !important;
-  min-width: 200px;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.cyber-popup-species {
-  background: rgba(0, 0, 0, 0.97) !important;
-  border-color: rgba(6, 182, 212, 0.6) !important;
-  box-shadow: 0 0 30px rgba(6, 182, 212, 0.4), inset 0 0 15px rgba(6, 182, 212, 0.15) !important;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.maplibregl-popup-content {
+  background: rgba(0, 0, 0, 0.95) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05) !important;
+  padding: 0 !important;
+  min-width: 260px;
+  max-width: calc(100vw - 24px);
+  overflow: visible !important;
+}
+
+.maplibregl-popup.cyberpunk-popup {
+  z-index: 2147483000 !important;
+  max-width: calc(100vw - 24px) !important;
+}
+
+.maplibregl-popup.cyberpunk-popup .maplibregl-popup-content {
+  width: max-content;
+  max-width: calc(100vw - 24px);
+}
+
+.maplibregl-marker {
+  pointer-events: auto;
+  z-index: 10;
 }
 
 .maplibregl-popup-tip {
-  border-top-color: rgba(6, 182, 212, 0.8);
-  border-bottom-color: rgba(6, 182, 212, 0.8);
+  border-top-color: rgba(6, 182, 212, 0.8) !important;
+  border-bottom-color: rgba(6, 182, 212, 0.8) !important;
 }
 
 .maplibregl-popup-close-button {
-  color: rgba(6, 182, 212, 0.8);
-  font-size: 20px;
-  padding: 0 6px;
-  background: transparent;
+  color: rgba(6, 182, 212, 0.8) !important;
+  font-size: 18px !important;
+  padding: 4px 8px !important;
+  background: transparent !important;
+  border: none !important;
+  top: 8px !important;
+  right: 8px !important;
 }
 
 .maplibregl-popup-close-button:hover {
-  background-color: rgba(6, 182, 212, 0.2);
-  color: rgba(6, 182, 212, 1);
+  background-color: rgba(6, 182, 212, 0.2) !important;
+  color: rgba(6, 182, 212, 1) !important;
 }
 
 .maplibregl-ctrl-bottom-right {
-  margin-bottom: 5px;
-  margin-right: 5px;
+  margin-bottom: 8px;
+  margin-right: 8px;
 }
 
 .maplibregl-ctrl-attrib-inner {
   color: rgba(255, 255, 255, 0.7);
   font-size: 10px;
-  background-color: rgba(0, 0, 0, 0.5) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .maplibregl-ctrl-attrib-inner a {
   color: rgba(6, 182, 212, 0.8);
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.maplibregl-ctrl-attrib-inner a:hover {
+  color: rgba(6, 182, 212, 1);
 }
 
 .maplibregl-map {
@@ -531,5 +918,317 @@ onUnmounted(() => {
 
 .bg-gradient-radial {
   background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
+}
+
+/* Project Popup Styles */
+.project-popup-wrapper {
+  padding: 16px;
+  min-width: 240px;
+  width: min(420px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+}
+.project-popup-header {
+  position: relative;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.project-corner-accent {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(6, 182, 212, 0.5);
+}
+.project-corner-accent.top-left {
+  top: -4px;
+  left: -4px;
+  border-right: none;
+  border-bottom: none;
+}
+.project-corner-accent.top-right {
+  top: -4px;
+  right: -4px;
+  border-left: none;
+  border-bottom: none;
+}
+.project-header-content {
+  position: relative;
+  z-index: 1;
+}
+.project-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.project-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(6, 182, 212, 0.9);
+  background: rgba(6, 182, 212, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+.project-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+.project-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0f0f0;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.project-header-line {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.4), rgba(168, 85, 247, 0.4), transparent);
+  margin-top: 12px;
+}
+.project-popup-body {
+  padding: 0 4px;
+}
+.project-stat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.project-stat-icon {
+  color: rgba(6, 182, 212, 0.7);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.project-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.project-stat-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.project-stat-value {
+  font-size: 13px;
+  color: #d1d5db;
+}
+.project-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 12px 0;
+}
+.project-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.project-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.project-metric-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.project-metric-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+.project-metric-value.direct {
+  color: #22d3ee;
+}
+.project-metric-value.indirect {
+  color: #a855f7;
+}
+.project-popup-footer {
+  margin-top: 12px;
+  height: 3px;
+  position: relative;
+}
+.project-footer-glow {
+  height: 100%;
+  width: 60%;
+  opacity: 0.4;
+  filter: blur(2px);
+}
+
+/* Species Popup Styles */
+.species-popup-wrapper {
+  padding: 0;
+  width: min(560px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  overflow: visible;
+}
+.species-image-frame {
+  height: 180px;
+  overflow: hidden;
+  border-bottom: 1px solid;
+  background: rgba(0, 0, 0, 0.6);
+}
+.species-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.species-header {
+  position: relative;
+  padding: 16px;
+  border-bottom: 1px solid;
+  background: rgba(0, 0, 0, 0.3);
+}
+.species-header-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.species-ornament {
+  margin-bottom: 8px;
+}
+.species-ornament.top {
+  margin-bottom: 12px;
+}
+.species-ornament.bottom {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+.species-badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.species-category-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.species-group-badge {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+  background: transparent;
+}
+.species-common-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+  overflow-wrap: anywhere;
+}
+.species-scientific-name {
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  overflow-wrap: anywhere;
+}
+.species-body {
+  padding: 14px 16px;
+}
+.species-description {
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 14px 0;
+  max-height: none;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.species-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.species-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.species-detail-row.endangerment {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 4px;
+}
+.species-detail-icon {
+  color: rgba(6, 182, 212, 0.8);
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.species-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.species-detail-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.species-detail-value {
+  font-size: 12px;
+  color: #d1d5db;
+  overflow-wrap: anywhere;
+}
+.species-threat-tag {
+  display: inline-block;
+  font-size: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+.endangerment-value {
+  font-weight: 600;
+}
+.species-footer {
+  padding: 0 16px 12px;
+}
+.species-footer-line {
+  height: 2px;
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .project-popup-wrapper,
+  .species-popup-wrapper {
+    width: calc(100vw - 24px);
+  }
+
+  .species-image-frame {
+    height: 138px;
+  }
 }
 </style>

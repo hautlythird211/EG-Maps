@@ -1,15 +1,15 @@
 <template>
   <div>
     <!-- Main controls container -->
-    <div :class="`absolute ${isMobile ? 'top-20 left-4' : 'top-20 right-4'} z-[500] flex flex-col gap-2`">
+    <div :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] right-[max(0.75rem,env(safe-area-inset-right))]' : 'top-20 right-4'} z-[700] flex flex-col gap-2 map-tool-stack`">
       <!-- Search Button -->
       <UiTooltip :side="isMobile ? 'right' : 'left'">
         <template #trigger>
           <UiButton
             variant="outline"
             size="icon"
-            class="w-10 h-10 rounded-md bg-black/70 border border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)] relative"
-            @click="showSearch = !showSearch"
+            class="map-tool-button relative"
+            @click="toggleSearch"
             :aria-label="t('mapControls.search')"
           >
             <iconify-icon icon="lucide:search" class="h-5 w-5" />
@@ -19,13 +19,45 @@
         <p>{{ dataset === 'project-grants' ? t('mapControls.searchProjects') : t('mapControls.searchSpecies') }} <span class="text-gray-500 ml-1">{{ t('mapControls.keyboardShortcut') }}</span></p>
       </UiTooltip>
 
+      <!-- Filter Panel Toggle -->
+      <UiTooltip v-if="!isGlobeView" :side="isMobile ? 'right' : 'left'">
+        <template #trigger>
+          <UiButton
+            variant="outline"
+            size="icon"
+            :class="`map-tool-button ${filterOpen ? 'map-tool-button-active' : ''}`"
+            @click="toggleFilterPanel"
+            :aria-label="filterOpen ? t('mapControls.hideFilters') : t('mapControls.showFilters')"
+          >
+            <iconify-icon icon="lucide:sliders-horizontal" class="h-5 w-5" />
+          </UiButton>
+        </template>
+        <p>{{ filterOpen ? t('mapControls.hideFilters') : t('mapControls.showFilters') }}</p>
+      </UiTooltip>
+
+      <!-- Connections / Particles Toggle -->
+      <UiTooltip :side="isMobile ? 'right' : 'left'">
+        <template #trigger>
+          <UiButton
+            variant="outline"
+            size="icon"
+            :class="`map-tool-button ${showConnections ? 'map-tool-button-active' : 'map-tool-button-muted'}`"
+            @click="emit('toggle-connections')"
+            :aria-label="showConnections ? t('mapControls.hideConnections') : t('mapControls.showConnections')"
+          >
+            <iconify-icon :icon="showConnections ? 'lucide:route' : 'lucide:unlink-2'" class="h-5 w-5" />
+          </UiButton>
+        </template>
+        <p>{{ showConnections ? t('mapControls.hideConnections') : t('mapControls.showConnections') }}</p>
+      </UiTooltip>
+
       <!-- Hex Grid Toggle -->
       <UiTooltip :side="isMobile ? 'right' : 'left'">
         <template #trigger>
           <UiButton
             variant="outline"
             size="icon"
-            class="w-10 h-10 rounded-md bg-black/70 border border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+            class="map-tool-button"
             @click="emit('toggle-hex-grid')"
             :aria-label="showHexGrid ? t('mapControls.hideHexGrid') : t('mapControls.showHexGrid')"
           >
@@ -42,7 +74,7 @@
           <UiButton
             variant="outline"
             size="icon"
-            class="w-10 h-10 rounded-md bg-black/70 border border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+            class="map-tool-button"
             @click="toggleFullscreen"
             :aria-label="fullscreen ? t('mapControls.exitFullscreen') : t('mapControls.enterFullscreen')"
           >
@@ -58,7 +90,7 @@
     <Transition name="search-panel">
       <div 
         v-if="showSearch" 
-        :class="`absolute ${isMobile ? 'top-44 left-4 right-4' : 'top-20 right-16 w-80'} z-[500] bg-black/95 backdrop-blur-md p-4 rounded-md border border-cyan-900/50 shadow-[0_0_20px_rgba(6,182,212,0.25)]`"
+        :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)] max-h-[calc(100svh-11rem)]' : 'top-20 right-16 w-[min(20rem,calc(100vw-5rem))] max-h-[calc(100svh-8rem)]'} z-[700] bg-black/95 backdrop-blur-md p-3 rounded-md border border-cyan-900/50 shadow-[0_0_20px_rgba(6,182,212,0.25)] overflow-hidden`"
         role="dialog"
         :aria-label="t('mapControls.search')"
       >
@@ -127,8 +159,8 @@
         <!-- Keyboard navigation hint -->
         <div v-if="searchResults.length > 0" class="mb-2 text-[10px] text-gray-600 flex items-center gap-2">
           <span class="flex items-center gap-1">
-            <kbd class="px-1 py-0.5 bg-gray-800 rounded text-[9px]">↑</kbd>
-            <kbd class="px-1 py-0.5 bg-gray-800 rounded text-[9px]">↓</kbd>
+            <kbd class="px-1 py-0.5 bg-gray-800 rounded text-[9px]">Up</kbd>
+            <kbd class="px-1 py-0.5 bg-gray-800 rounded text-[9px]">Down</kbd>
             {{ t('mapControls.clickToNavigate') }}
           </span>
         </div>
@@ -136,9 +168,9 @@
         <!-- Results List -->
         <div 
           ref="resultsContainerRef"
-          class="space-y-0.5 max-h-[280px] overflow-y-auto cyber-scrollbar pr-1"
+          :class="`space-y-0.5 ${isMobile ? 'max-h-[42vh]' : 'max-h-[280px]'} overflow-y-auto cyber-scrollbar pr-1`"
           role="listbox"
-          aria-label="Search results"
+          :aria-label="t('mapControls.searchResults')"
         >
           <template v-if="searchResults.length > 0">
             <div
@@ -146,25 +178,25 @@
               :key="`search-result-${index}`"
               :ref="el => { if (index === selectedIndex) selectedResultEl = el }"
               :class="`group flex items-start p-2 rounded cursor-pointer transition-all duration-150 ${index === selectedIndex ? 'bg-cyan-900/30 ring-1 ring-cyan-500/50' : 'hover:bg-cyan-950/20'}`"
-              @click="navigateToLocation(result.lat || result.latitude, result.lng || result.longitude, result.project_title || result.commonName)"
+              @click="navigateToLocation(getResultLat(result), getResultLng(result), getResultTitle(result))"
               @mouseenter="selectedIndex = index"
               role="option"
               :aria-selected="index === selectedIndex"
             >
               <div class="flex-1 min-w-0">
                 <h4 :class="`text-sm font-medium truncate transition-colors ${index === selectedIndex ? 'text-cyan-300' : 'text-cyan-400 group-hover:text-cyan-300'}`">
-                  {{ result.project_title || result.commonName }}
+                  {{ getResultTitle(result) }}
                 </h4>
                 <div class="flex justify-between items-center">
                   <p class="text-xs text-gray-500 flex items-center">
                     <iconify-icon icon="lucide:map-pin" class="h-3 w-3 inline mr-1 flex-shrink-0" />
-                    {{ result.country_province || result.region }}
+                    {{ getResultLocation(result) }}
                   </p>
-                  <p v-if="result.indirect_beneficiaries" class="text-xs text-gray-500">
-                    {{ result.indirect_beneficiaries.toLocaleString() }}
+                  <p v-if="getProjectBeneficiaries(result)" class="text-xs text-gray-500">
+                    {{ getProjectBeneficiaries(result)?.toLocaleString() }}
                   </p>
-                  <p v-else-if="result.taxonomicGroup" class="text-xs text-gray-500">
-                    {{ result.taxonomicGroup }}
+                  <p v-else-if="getSpeciesGroup(result)" class="text-xs text-gray-500">
+                    {{ getSpeciesGroup(result) }}
                   </p>
                 </div>
               </div>
@@ -224,19 +256,26 @@ import type { Species } from '@/lib/map-utils'
 interface Props {
   isGlobeView?: boolean
   showHexGrid?: boolean
+  showConnections?: boolean
   dataset?: 'project-grants' | 'endangered-species'
   projects?: ProjectData[]
   species?: Species[]
+  filterOpen?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isGlobeView: false,
   showHexGrid: true,
+  showConnections: true,
   dataset: 'project-grants',
+  filterOpen: false,
 })
 
 const emit = defineEmits<{
   'toggle-hex-grid': []
+  'toggle-connections': []
+  'toggle-filter': []
+  'search-open-change': [open: boolean]
   'navigate': [lat: number, lng: number]
 }>()
 
@@ -248,7 +287,7 @@ const showSearch = ref(false)
 const showAllItems = ref(false)
 const searchQuery = ref('')
 const searchResults = ref<Array<ProjectData | Species>>([])
-const searchInputRef = ref<HTMLElement | null>(null)
+const searchInputRef = ref<any>(null)
 const selectedIndex = ref(-1)
 const selectedResultEl = ref<HTMLElement | null>(null)
 const resultsContainerRef = ref<HTMLElement | null>(null)
@@ -294,6 +333,18 @@ function clearSearch() {
   }
 }
 
+function toggleSearch() {
+  showSearch.value = !showSearch.value
+  emit('search-open-change', showSearch.value)
+}
+
+function toggleFilterPanel() {
+  if (showSearch.value) {
+    closeSearch()
+  }
+  emit('toggle-filter')
+}
+
 function handleSearchKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -316,9 +367,9 @@ function handleSearchKeydown(e: KeyboardEvent) {
     e.preventDefault()
     const result = searchResults.value[selectedIndex.value]
     navigateToLocation(
-      result.lat || (result as any).latitude,
-      result.lng || (result as any).longitude,
-      (result as any).project_title || (result as any).commonName
+      getResultLat(result),
+      getResultLng(result),
+      getResultTitle(result)
     )
   }
 }
@@ -338,6 +389,34 @@ watch(searchResults, () => {
 
 // Search data based on active dataset
 const currentProjects = computed(() => props.projects || allProjectsData)
+
+function isProjectResult(result: ProjectData | Species): result is ProjectData {
+  return 'project_title' in result
+}
+
+function getResultTitle(result: ProjectData | Species): string {
+  return isProjectResult(result) ? result.project_title : result.commonName
+}
+
+function getResultLocation(result: ProjectData | Species): string {
+  return isProjectResult(result) ? result.country_province : result.region
+}
+
+function getResultLat(result: ProjectData | Species): number {
+  return isProjectResult(result) ? result.latitude : result.lat
+}
+
+function getResultLng(result: ProjectData | Species): number {
+  return isProjectResult(result) ? result.longitude : result.lng
+}
+
+function getProjectBeneficiaries(result: ProjectData | Species): number | null {
+  return isProjectResult(result) ? result.indirect_beneficiaries : null
+}
+
+function getSpeciesGroup(result: ProjectData | Species): string | null {
+  return isProjectResult(result) ? null : result.taxonomicGroup
+}
 
 // Search logic
 watch([searchQuery, showAllItems, () => props.dataset], () => {
@@ -391,13 +470,19 @@ watch(showSearch, async (val) => {
 
 // Keyboard shortcut for search (Ctrl+K or /)
 function handleKeyboardShortcut(e: KeyboardEvent) {
+  const target = e.target as HTMLElement | null
+  const isTyping = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT' || target?.isContentEditable
+  if (isTyping && e.key !== 'Escape') return
+
   if (e.key === '/' && !showSearch.value) {
     e.preventDefault()
     showSearch.value = true
+    emit('search-open-change', true)
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault()
     showSearch.value = !showSearch.value
+    emit('search-open-change', showSearch.value)
   }
   if (e.key === 'Escape' && showSearch.value) {
     closeSearch()
@@ -425,7 +510,7 @@ function toggleFullscreen() {
 }
 
 function navigateToLocation(lat: number, lng: number, name?: string) {
-  if (lat && lng) {
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
     if (name && searchQuery.value) {
       saveRecentSearch(searchQuery.value)
     }
@@ -446,5 +531,6 @@ function closeSearch() {
   searchQuery.value = ''
   showAllItems.value = false
   searchResults.value = []
+  emit('search-open-change', false)
 }
 </script>
