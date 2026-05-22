@@ -15,12 +15,12 @@
 
       <!-- Error code -->
       <h1 class="text-6xl sm:text-8xl font-bold mb-4 text-[var(--text-primary)]">
-        {{ error.statusCode }}
+        {{ error?.statusCode || 'Error' }}
       </h1>
 
       <!-- Error message -->
       <p class="text-xl text-[var(--text-secondary)] mb-8 max-w-md">
-        {{ error.statusCode === 404 ? t('error.pageNotFound') : t('error.somethingWrong') }}
+        {{ error?.statusCode === 404 ? t('error.pageNotFound') : t('error.somethingWrong') }}
       </p>
 
       <!-- Action buttons -->

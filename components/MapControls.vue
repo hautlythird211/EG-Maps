@@ -177,7 +177,7 @@
             <div
               v-for="(result, index) in searchResults"
               :key="`search-result-${index}`"
-              :ref="el => { if (index === selectedIndex) selectedResultEl = el }"
+              :ref="(el: any) => { if (index === selectedIndex) selectedResultEl = el as Element | null }"
               :class="`group flex items-start p-2 rounded cursor-pointer transition-all duration-150 ${index === selectedIndex ? 'ring-1' : ''}`"
               :style="{
                 background: index === selectedIndex ? 'var(--search-result-selected-bg)' : '',
@@ -294,7 +294,7 @@ const searchQuery = ref('')
 const searchResults = ref<Array<ProjectData | Species>>([])
 const searchInputRef = ref<any>(null)
 const selectedIndex = ref(-1)
-const selectedResultEl = ref<HTMLElement | null>(null)
+const selectedResultEl = ref<Element | null>(null)
 const resultsContainerRef = ref<HTMLElement | null>(null)
 const recentSearches = ref<string[]>([])
 

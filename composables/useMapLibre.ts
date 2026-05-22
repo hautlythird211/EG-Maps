@@ -81,8 +81,7 @@ export function useMapLibre(
         maxTileCacheSize: 200,
         maxTileCacheZoomLevels: 5,
         transformRequest,
-        antialias: !!options.isGlobe,
-      })
+      } as maplibregl.MapOptions & { antialias?: boolean })
 
       m.addControl(new maplibregl.AttributionControl({
         customAttribution: `EARTH GUARDIANS @ ${new Date().getFullYear()}`

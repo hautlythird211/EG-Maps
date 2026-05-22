@@ -1,6 +1,6 @@
 <template>
-  <main class="h-[100svh] overflow-hidden bg-white text-black">
-    <section class="mx-auto flex h-[100svh] w-[min(100%,78rem)] flex-col justify-center px-[clamp(1rem,4vw,2.5rem)] py-[clamp(5.75rem,10vh,8rem)]">
+  <main class="bg-white text-black">
+    <section class="mx-auto flex min-h-[100svh] w-[min(100%,78rem)] flex-col justify-center px-[clamp(1rem,4vw,2.5rem)] py-[clamp(5.75rem,10vh,8rem)]">
       <div class="grid gap-[clamp(1.75rem,4vw,3.25rem)] lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)] lg:items-end">
         <header class="max-w-[min(100%,38rem)]">
           <div class="mb-[clamp(1.5rem,4vw,2.5rem)] flex items-center gap-[clamp(1rem,3vw,1.5rem)]">
@@ -91,6 +91,8 @@
         </div>
       </div>
     </section>
+
+    <RedBookDatabases />
   </main>
 </template>
 

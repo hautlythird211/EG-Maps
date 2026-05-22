@@ -80,7 +80,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="group relative flex flex-col items-center"
-              :ref="el => { if (el && el.nodeType === 1) dockItemRefs.set(index, el); else dockItemRefs.delete(index) }"
+              :ref="(el: any) => { if (el?.nodeType === 1) dockItemRefs.set(index, el as Element); else dockItemRefs.delete(index) }"
               @mouseenter="onDockHover(index)"
               @mouseleave="onDockLeave()"
             >
@@ -106,7 +106,7 @@
               v-else
               :to="item.path"
               class="group relative flex flex-col items-center"
-              :ref="el => { if (el && el.nodeType === 1) dockItemRefs.set(index, el); else dockItemRefs.delete(index) }"
+              :ref="(el: any) => { if (el?.nodeType === 1) dockItemRefs.set(index, el as Element); else dockItemRefs.delete(index) }"
               @mouseenter="onDockHover(index)"
               @mouseleave="onDockLeave()"
             >
@@ -147,7 +147,7 @@
             <button
               @click="showLangMenu = !showLangMenu"
               class="group relative flex flex-col items-center"
-              :ref="el => { if (el && el.nodeType === 1) dockItemRefs.set(navItems.length, el); else dockItemRefs.delete(navItems.length) }"
+              :ref="(el: any) => { if (el?.nodeType === 1) dockItemRefs.set(navItems.length, el as Element); else dockItemRefs.delete(navItems.length) }"
               @mouseenter="onDockHover(navItems.length)"
               @mouseleave="onDockLeave()"
             >

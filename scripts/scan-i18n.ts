@@ -167,4 +167,5 @@ byFile.forEach((items, file) => {
 })
 
 // Export for use in fix script
-export { HardcodedText, scanFile, scanDirectory }
+export type { HardcodedText }
+export { scanFile, scanDirectory }

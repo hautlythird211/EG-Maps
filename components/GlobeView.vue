@@ -303,13 +303,13 @@ function transformRequest(url: string, resourceType?: string) {
     const cached = tileCache.get(url)!
     return {
       url,
-      headers: {},
-      method: 'GET',
+      headers: {} as Record<string, string>,
+      method: 'GET' as const,
       type: 'image' as const,
       credentials: 'same-origin' as const,
       collectResourceTiming: false,
       _cachedResponse: cached,
-    }
+    } as maplibregl.RequestParameters
   }
   return { url }
 }
@@ -352,8 +352,7 @@ async function initMap() {
       maxTileCacheSize: 200,
       maxTileCacheZoomLevels: 5,
       transformRequest,
-      antialias: true,
-    })
+    } as maplibregl.MapOptions & { antialias?: boolean })
 
     map.addControl(
       new maplibregl.AttributionControl({
@@ -432,11 +431,10 @@ async function initMap() {
     map.on('error', (err) => {
       console.error('MapLibre error:', err)
       errorCount++
-      // Retry with fallback style once if we get tile/style load errors
       if (!usedFallback && errorCount >= 2 && MAP_STYLE.includes('maptiler.com')) {
         usedFallback = true
         console.warn('MapTiler style failed, falling back to demotiles style')
-        map.setStyle('https://demotiles.maplibre.org/style.json')
+        map!.setStyle('https://demotiles.maplibre.org/style.json')
         return
       }
       isLoading.value = false

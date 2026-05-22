@@ -82,7 +82,6 @@ export default defineNuxtConfig({
 
   // WSL fix: disable vite-node IPC, enforce ws HMR
   experimental: {
-    viteNode: false,
     viteEnvironmentApi: true,
     appManifest: false,
   },

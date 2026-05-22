@@ -118,6 +118,23 @@
           </div>
         </section>
 
+        <section v-else-if="activeTab === 'mains'" class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.8fr)]">
+          <div>
+            <h2 class="text-[clamp(1.45rem,4vw,1.75rem)] font-black leading-tight">{{ t('info.mains') }}</h2>
+            <p class="mt-3 text-sm leading-7 text-black/70">{{ t('info.mainsDesc') }}</p>
+            <dl class="mt-5 grid gap-3 sm:grid-cols-2">
+              <div class="min-w-0 rounded-md border-2 border-black p-4">
+                <dt class="text-xs font-black uppercase tracking-[0.18em] text-black/55">{{ t('info.rccLoukaLabel') }}</dt>
+                <dd class="mt-2 break-words font-black">{{ t('info.rccLouka') }}</dd>
+              </div>
+              <div class="min-w-0 rounded-md border-2 border-black p-4">
+                <dt class="text-xs font-black uppercase tracking-[0.18em] text-black/55">{{ t('info.rccTupaLeviLabel') }}</dt>
+                <dd class="mt-2 break-words font-black">{{ t('info.rccTupaLevi') }}</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
         <section v-else class="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
           <div>
             <h2 class="text-[clamp(1.45rem,4vw,1.75rem)] font-black leading-tight">{{ t('info.feedback') }}</h2>
@@ -200,13 +217,14 @@ useHead({
   ],
 })
 
-type InfoTab = 'overview' | 'grants' | 'species' | 'feedback'
+type InfoTab = 'overview' | 'grants' | 'species' | 'mains' | 'feedback'
 
 const activeTab = ref<InfoTab>('overview')
 const tabs: Array<{ id: InfoTab; label: string; icon: string }> = [
   { id: 'overview', label: 'Overview', icon: 'lucide:layout-dashboard' },
   { id: 'grants', label: 'Grants', icon: 'lucide:hand-heart' },
   { id: 'species', label: 'Species', icon: 'lucide:bird' },
+  { id: 'mains', label: 'Mains', icon: 'lucide:crown' },
   { id: 'feedback', label: 'Feedback', icon: 'lucide:message-square' },
 ]
 

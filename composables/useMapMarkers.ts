@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue'
+import { shallowRef } from 'vue'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import maplibregl from 'maplibre-gl'
 import type { ProjectData, Species } from '@/lib/types'
@@ -129,7 +129,7 @@ export function useMapMarkers(
   map: Ref<MapLibreMap | null>,
   baseURL?: string
 ) {
-  const markers = ref<maplibregl.Marker[]>([])
+  const markers = shallowRef<maplibregl.Marker[]>([])
   let pendingVisibilityUpdate = false
 
   function rebuildMarkers(
@@ -149,10 +149,10 @@ export function useMapMarkers(
         const el = createProjectMarkerElement(project, baseURL)
         el.style.cursor = 'pointer'
         el.addEventListener('click', () => onProjectClick?.(project))
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([project.longitude, project.latitude])
-          .addTo(map.value!)
-        markers.value.push(marker)
+        const marker: maplibregl.Marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        marker.setLngLat([project.longitude, project.latitude])
+        marker.addTo(map.value!)
+        markers.value.push(marker as maplibregl.Marker)
       })
     } else {
       const speciesToRender = species.filter(s => isValidCoordinate(s.lat, s.lng))
@@ -166,8 +166,8 @@ export function useMapMarkers(
         el.setAttribute('aria-label', `${sp.commonName} - ${sp.taxonomicGroup}`)
         el.addEventListener('click', () => onSpeciesClick?.(sp))
         const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([sp.lng, sp.lat])
-          .addTo(map.value!)
+        marker.setLngLat([sp.lng, sp.lat])
+        marker.addTo(map.value!)
         markers.value.push(marker)
       })
     }

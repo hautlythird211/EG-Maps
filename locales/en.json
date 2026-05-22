@@ -25,7 +25,17 @@
     "view3d": "3D Globe",
     "projectGrants": "Project Grants",
     "species": "Endangered Species",
-    "footer": "Empowering youth-led environmental action worldwide"
+    "footer": "Empowering youth-led environmental action worldwide",
+    "databasesTitle": "Endangered Species Databases (Red Books)",
+    "databasesDesc": "Explore the official red lists that document threatened species worldwide. Contribute data to help keep these critical records up to date.",
+    "iucnTitle": "IUCN Red List of Threatened Species",
+    "iucnDesc": "The world's most comprehensive inventory of the global conservation status of biological species, maintained by the International Union for Conservation of Nature.",
+    "iucnScope": "Global",
+    "icmbioTitle": "ICMBio / IBAMA \u2014 Livro Vermelho (Brazilian Red Book)",
+    "icmbioDesc": "The official Brazilian registry of endangered species, maintained by ICMBio and IBAMA. Documents the conservation status of the country's rich biodiversity.",
+    "icmbioScope": "Brazil",
+    "submitData": "Submit Data",
+    "submitDataSubject": "Data contribution for Red Book database"
   },
   "mapControls": {
     "search": "Search",
@@ -166,6 +176,12 @@
     "feedbackPlaceholder": "Share your thoughts, report a bug, or suggest a feature...",
     "submitFeedback": "Submit Feedback",
     "feedbackSubmitted": "Thank you! Your feedback has been submitted.",
+    "mains": "Mains",
+    "mainsDesc": "This interactive platform is a creation of the following RCC members:",
+    "rccLoukaLabel": "RCC Europa",
+    "rccLouka": "RCC Louka — Europa",
+    "rccTupaLeviLabel": "RCC South America",
+    "rccTupaLevi": "RCC Tupã Levi — South America",
     "makeDifference": "Want to Make a Difference?",
     "makeDifferenceDesc": "Join Earth Guardians and become part of the movement protecting our planet.",
     "joinUs": "Join Earth Guardians"
