@@ -1,7 +1,7 @@
 <template>
   <div
-    :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)]' : 'top-20 right-16 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 project-filter-panel transition-all duration-300`"
-    :style="{ zIndex: 'var(--z-map-ui-controls)' }"
+    :class="`fixed ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)]' : 'top-20 left-4 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 project-filter-panel transition-all duration-300`"
+    :style="{ zIndex: '10001' }"
   >
     <!-- Header -->
     <div class="flex justify-between items-center mb-3">
@@ -15,15 +15,6 @@
         </span>
       </div>
       <UiButton
-        v-if="isMobile"
-        variant="ghost"
-        size="icon"
-        class="h-7 w-7 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 rounded"
-        @click="isCollapsed = !isCollapsed"
-      >
-        <iconify-icon :icon="isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'" class="h-4 w-4" />
-      </UiButton>
-      <UiButton
         v-if="hasActiveFilters"
         variant="ghost"
         size="sm"
@@ -35,22 +26,22 @@
       </UiButton>
     </div>
 
-    <div v-if="!isCollapsed" :class="isMobile ? 'max-h-[calc(100svh-13rem)] overflow-y-auto pr-1' : ''">
+    <div :class="isMobile ? 'max-h-[calc(100svh-13rem)] overflow-y-auto pr-1' : ''">
     <!-- Search Input -->
     <div class="mb-3">
       <div class="relative">
-        <iconify-icon icon="lucide:search" class="absolute left-2.5 top-2 h-4 w-4 text-gray-500 pointer-events-none" />
+        <iconify-icon icon="lucide:search" class="absolute left-2.5 top-2 h-4 w-4 text-white/50 pointer-events-none" />
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="t('filter.searchPlaceholder')"
-          class="filter-search w-full pl-8 pr-8 py-1.5 bg-black/50 border border-cyan-900/50 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+          class="filter-search w-full pl-8 pr-8 py-1.5 bg-black/50 border border-cyan-900/50 rounded text-sm text-white placeholder-white/50 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
           :aria-label="t('filter.searchPlaceholder')"
         />
         <button
           v-if="searchQuery"
           @click="searchQuery = ''"
-          class="absolute right-2.5 top-1.5 h-5 w-5 flex items-center justify-center rounded-full bg-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-600/50 transition-colors"
+          class="absolute right-2.5 top-1.5 h-5 w-5 flex items-center justify-center rounded-full bg-gray-700/50 text-white/70 hover:text-white hover:bg-gray-600/50 transition-colors"
         >
           <iconify-icon icon="lucide:x" class="h-3 w-3" />
         </button>
@@ -103,7 +94,7 @@
       <!-- Progress bar -->
       <div class="h-1 bg-gray-800 rounded-full overflow-hidden">
         <div
-          class="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-300 ease-out"
+          class="h-full bg-[var(--text-primary)] transition-all duration-300 ease-out"
           :style="{ width: `${filteredPercent}%` }"
         />
       </div>
@@ -140,11 +131,6 @@ const filters = reactive({
 })
 
 const searchQuery = ref('')
-const isCollapsed = ref(isMobile.value)
-
-watch(isMobile, (mobile) => {
-  isCollapsed.value = mobile
-})
 
 // Extract unique countries from projects data
 const uniqueCountries = computed(() => {

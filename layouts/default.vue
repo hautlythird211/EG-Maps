@@ -3,14 +3,14 @@
     <slot />
 
     <!-- Unified Top Header - 2D/3D + Utilities + Theme -->
-    <header v-if="showUnifiedHeader" class="fixed left-1/2 top-[1.25rem] z-[10000] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 sm:left-auto sm:right-[max(2rem,env(safe-area-inset-right))] sm:top-[0.5rem] sm:translate-x-0">
+    <header v-if="showUnifiedHeader" class="fixed left-4 top-[clamp(5rem,16vw,6rem)] z-[10000] sm:left-auto sm:right-[max(2rem,env(safe-area-inset-right))] sm:top-[0.5rem]">
       <div :class="unifiedHeaderShellClass">
         <!-- Left: 2D/3D Toggle -->
-        <div v-if="showViewToggle" class="map-view-switcher flex items-center gap-0.5">
+        <div v-if="showViewToggle" class="map-view-switcher flex flex-col sm:flex-row items-start sm:items-center gap-0.5">
           <NuxtLink
             :to="view2DRoute"
             :class="[
-              'map-view-tab map-view-tab-sm',
+              'map-view-tab map-view-tab-sm max-sm:h-8 max-sm:w-8 max-sm:justify-center max-sm:p-0',
               !is3DRoute ? 'map-view-tab-active' : 'map-view-tab-idle'
             ]"
           >
@@ -20,7 +20,7 @@
           <NuxtLink
             :to="view3DRoute"
             :class="[
-              'map-view-tab map-view-tab-sm',
+              'map-view-tab map-view-tab-sm max-sm:h-8 max-sm:w-8 max-sm:justify-center max-sm:p-0',
               is3DRoute ? 'map-view-tab-active' : 'map-view-tab-idle'
             ]"
           >
@@ -30,10 +30,10 @@
         </div>
 
         <!-- Separator -->
-        <div v-if="showViewToggle" :class="headerSeparatorClass" />
+        <div v-if="showViewToggle" :class="[headerSeparatorClass, 'hidden sm:block']" />
 
         <!-- Right: Navigation + Theme -->
-        <div class="flex items-center gap-0.5">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-0.5">
           <NuxtLink
             v-for="item in headerItems"
             :key="item.path"
@@ -54,7 +54,7 @@
           </a>
 
           <!-- Separator -->
-          <div :class="headerSeparatorClass" />
+          <div :class="[headerSeparatorClass, 'hidden sm:block']" />
 
           <!-- Theme toggle -->
           <button
@@ -237,26 +237,26 @@ const view3DRoute = computed(() => {
 
 const isLightTheme = computed(() => !isDark.value)
 const unifiedHeaderShellClass = computed(() => [
-  'flex max-w-full items-center gap-1 overflow-hidden rounded-lg border px-1 py-1 shadow-xl backdrop-blur-xl',
+  'flex flex-col sm:flex-row w-fit max-w-[calc(100vw-2rem)] sm:max-w-full items-start sm:items-center gap-2 sm:gap-1 rounded-xl border px-1.5 py-2 sm:px-1 sm:py-1 shadow-xl backdrop-blur-xl',
   isLightTheme.value
     ? 'bg-white/95 border-black text-black shadow-[0_12px_32px_rgba(0,0,0,0.18)]'
-    : 'bg-black/80 border-cyan-900/40 text-cyan-100 shadow-[0_0_18px_rgba(6,182,212,0.16)]',
+    : 'bg-black/80 border-white/20 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)]',
 ])
 const headerSeparatorClass = computed(() => [
   'mx-0.5 h-5 w-px self-center',
-  isLightTheme.value ? 'bg-black/30' : 'bg-cyan-900/40',
+  isLightTheme.value ? 'bg-black/30' : 'bg-white/20',
 ])
 const dockShellClass = computed(() => [
   'max-w-full px-2 py-2 rounded-2xl border shadow-xl backdrop-blur-xl transition-colors duration-200',
   isLightTheme.value
     ? 'bg-white/95 border-black text-black shadow-[0_12px_32px_rgba(0,0,0,0.18)]'
-    : 'panel-floating',
+    : 'bg-black/90 border-white/20 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)]',
 ])
 const headerUtilityClass = computed(() => [
-  'inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors',
+  'inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors max-sm:h-8 max-sm:w-8 max-sm:justify-center max-sm:px-0',
   isLightTheme.value
     ? 'text-black hover:bg-black hover:text-white'
-    : 'text-cyan-200 hover:bg-cyan-500/15 hover:text-white',
+    : 'text-white/70 hover:bg-white/10 hover:text-white',
 ])
 const tooltipClass = computed(() => [
   'absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 text-xs font-medium rounded-lg opacity-0 transition-all duration-150 pointer-events-none shadow-lg whitespace-nowrap',
@@ -271,7 +271,7 @@ const tooltipArrowClass = computed(() => [
 const inactiveIconClass = computed(() =>
   isLightTheme.value
     ? 'bg-white text-black border border-black hover:bg-black hover:text-white'
-    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--border-color)] hover:text-[var(--text-primary)]'
+    : 'bg-[#1e1e1e] text-[#c8c8c8] hover:bg-white hover:text-black'
 )
 const utilityIconClass = computed(() => [
   'flex items-center justify-center rounded-xl transition-all duration-150 ease-out',
@@ -279,7 +279,7 @@ const utilityIconClass = computed(() => [
 ])
 const separatorClass = computed(() => [
   'mx-1 h-8 w-px self-center',
-  isLightTheme.value ? 'bg-black' : 'bg-[var(--border-color)]',
+  isLightTheme.value ? 'bg-black' : 'bg-white/20',
 ])
 const dropdownClass = computed(() => [
   'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 overflow-hidden rounded-lg shadow-xl min-w-[120px]',
@@ -318,13 +318,7 @@ function getActiveStyle(variant: string = 'cyan') {
     return 'bg-black text-white shadow-none'
   }
 
-  const styles: Record<string, string> = {
-    cyan: 'bg-gradient-to-br from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/30',
-    green: 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30',
-    purple: 'bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30',
-    orange: 'bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/30',
-  }
-  return styles[variant] || styles.cyan
+  return 'bg-white text-black shadow-none'
 }
 
 function getActiveIndicatorClass(variant: string = 'cyan') {
@@ -332,13 +326,7 @@ function getActiveIndicatorClass(variant: string = 'cyan') {
     return 'bg-black'
   }
 
-  const classes: Record<string, string> = {
-    cyan: 'bg-cyan-400',
-    green: 'bg-green-400',
-    purple: 'bg-purple-400',
-    orange: 'bg-orange-400',
-  }
-  return classes[variant] || classes.cyan
+  return 'bg-white'
 }
 
 function getDropdownItemClass(loc: string) {
@@ -346,15 +334,15 @@ function getDropdownItemClass(loc: string) {
   if (isLightTheme.value) {
     return `${base} ${locale.value === loc ? 'text-white bg-black' : 'text-black hover:bg-black/10'}`
   }
-  return `${base} hover:bg-gray-700/50 ${locale.value === loc ? 'text-cyan-400 bg-cyan-900/20' : 'text-gray-300'}`
+  return `${base} hover:bg-gray-700/50 ${locale.value === loc ? 'text-white bg-white/20' : 'text-gray-300'}`
 }
 
 function getHeaderItemClass(path: string) {
-  const base = 'inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors'
+  const base = 'inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors max-sm:h-8 max-sm:w-8 max-sm:justify-center max-sm:px-0'
   if (isLightTheme.value) {
     return `${base} ${isActive(path) ? 'bg-black text-white' : 'text-black hover:bg-black/10'}`
   }
-  return `${base} ${isActive(path) ? 'bg-cyan-500/20 text-cyan-200' : 'text-cyan-100 hover:bg-cyan-500/15 hover:text-white'}`
+  return `${base} ${isActive(path) ? 'bg-white/20 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`
 }
 
 // Dock magnification logic

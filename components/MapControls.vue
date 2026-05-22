@@ -5,15 +5,15 @@
       <!-- Search Button -->
       <UiTooltip :side="isMobile ? 'right' : 'left'">
         <template #trigger>
-          <UiButton
-            variant="outline"
+<UiButton
+            variant="ghost"
             size="icon"
             class="map-tool-button relative"
             @click="toggleSearch"
             :aria-label="t('mapControls.search')"
           >
             <iconify-icon icon="lucide:search" class="h-5 w-5" />
-            <span v-if="recentSearches.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full" />
+            <span v-if="recentSearches.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full" />
           </UiButton>
         </template>
         <p>{{ dataset === 'project-grants' ? t('mapControls.searchProjects') : t('mapControls.searchSpecies') }} <span class="text-gray-500 ml-1">{{ t('mapControls.keyboardShortcut') }}</span></p>
@@ -23,7 +23,7 @@
       <UiTooltip v-if="!isGlobeView" :side="isMobile ? 'right' : 'left'">
         <template #trigger>
           <UiButton
-            variant="outline"
+            variant="ghost"
             size="icon"
             :class="`map-tool-button ${filterOpen ? 'map-tool-button-active' : ''}`"
             @click="toggleFilterPanel"
@@ -90,18 +90,18 @@
     <Transition name="search-panel">
       <div 
         v-if="showSearch" 
-        :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)] max-h-[calc(100svh-11rem)]' : 'top-20 right-16 w-[min(20rem,calc(100vw-5rem))] max-h-[calc(100svh-8rem)]'} z-[700] bg-black/95 backdrop-blur-md p-3 rounded-md border border-cyan-900/50 shadow-[0_0_20px_rgba(6,182,212,0.25)] overflow-hidden`"
+        :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)] max-h-[calc(100svh-11rem)]' : 'top-20 right-16 w-[min(20rem,calc(100vw-5rem))] max-h-[calc(100svh-8rem)]'} z-[700] panel-cyber p-3 overflow-hidden`"
         role="dialog"
         :aria-label="t('mapControls.search')"
       >
         <div class="flex justify-between items-center mb-3">
-          <h3 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+          <h3 class="text-sm font-bold text-[var(--tool-btn-text)] flex items-center gap-2">
             <iconify-icon icon="lucide:search" class="h-4 w-4" />
             {{ dataset === 'project-grants' ? t('mapControls.searchProjects') : t('mapControls.searchSpecies') }}
           </h3>
           <div class="flex items-center gap-1">
-            <span class="text-[10px] text-gray-500 hidden sm:inline">ESC</span>
-            <UiButton variant="ghost" size="icon" class="h-6 w-6 text-gray-400 hover:text-white" @click="closeSearch" :aria-label="t('general.close')">
+            <span class="text-[10px] text-[var(--text-muted)] hidden sm:inline">ESC</span>
+            <UiButton variant="ghost" size="icon" class="h-6 w-6 text-[var(--text-muted)] hover:text-[var(--text-primary)]" @click="closeSearch" :aria-label="t('general.close')">
               <iconify-icon icon="lucide:x" class="h-4 w-4" />
             </UiButton>
           </div>
@@ -114,14 +114,15 @@
               type="text"
               :placeholder="dataset === 'project-grants' ? t('mapControls.searchPlaceholder') : t('mapControls.searchSpeciesPlaceholder')"
               v-model="searchQuery"
-              class="bg-gray-900/50 border-cyan-900/50 focus:border-cyan-500 text-white pr-8"
+              class="pr-8"
+              :style="{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--input-text)' }"
               @keydown="handleSearchKeydown"
               :aria-label="t('mapControls.search')"
             />
-            <iconify-icon v-if="!searchQuery" icon="lucide:search" class="absolute right-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <iconify-icon v-if="!searchQuery" icon="lucide:search" class="absolute right-2.5 top-2.5 h-4 w-4 text-[var(--text-muted)]" />
             <button 
               v-else 
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors p-0.5"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-0.5"
               @click="clearSearch"
               :aria-label="t('general.close')"
             >
@@ -131,7 +132,7 @@
           <UiButton
             variant="outline"
             size="icon"
-            :class="`h-9 w-9 border-cyan-900/50 transition-all duration-200 ${showAllItems ? 'bg-cyan-900/30 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-cyan-400 bg-black/70'} hover:bg-cyan-950/30 hover:text-cyan-300`"
+            :class="`h-9 w-9 border-[var(--panel-border)] transition-all duration-200 ${showAllItems ? 'bg-[var(--tool-btn-active-bg)] text-[var(--tool-btn-active-text)] shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-[var(--tool-btn-text)]'} hover:bg-[var(--tool-btn-active-bg)] hover:text-[var(--tool-btn-active-text)]`"
             :title="t('mapControls.showAll')"
             @click="toggleAllItems"
             :aria-label="t('mapControls.showAll')"
@@ -142,12 +143,12 @@
 
         <!-- Recent Searches -->
         <div v-if="recentSearches.length > 0 && !searchQuery && !showAllItems" class="mb-3">
-          <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">{{ t('mapControls.recent') }}</p>
+          <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1.5">{{ t('mapControls.recent') }}</p>
           <div class="flex flex-wrap gap-1">
             <button
               v-for="recent in recentSearches.slice(0, 3)"
               :key="recent"
-              class="text-xs px-2 py-1 bg-gray-900/50 hover:bg-cyan-950/30 text-gray-400 hover:text-cyan-400 rounded transition-colors flex items-center gap-1"
+              class="text-xs px-2 py-1 rounded transition-colors flex items-center gap-1 bg-[var(--input-bg)] text-[var(--text-muted)] hover:bg-[var(--search-result-hover-bg)] hover:text-[var(--search-result-text)]"
               @click="applyRecentSearch(recent)"
             >
               <iconify-icon icon="lucide:clock" class="h-3 w-3" />
@@ -157,10 +158,10 @@
         </div>
 
         <!-- Keyboard navigation hint -->
-        <div v-if="searchResults.length > 0" class="mb-2 text-[10px] text-gray-600 flex items-center gap-2">
+        <div v-if="searchResults.length > 0" class="mb-2 text-[10px] text-[var(--text-muted)] flex items-center gap-2">
           <span class="flex items-center gap-1">
-            <kbd class="px-1 py-0.5 bg-gray-800 rounded text-[9px]">Up</kbd>
-            <kbd class="px-1 py-0.5 bg-gray-800 rounded text-[9px]">Down</kbd>
+            <kbd class="px-1 py-0.5 rounded text-[9px]" style="background: var(--input-bg); color: var(--input-text);">Up</kbd>
+            <kbd class="px-1 py-0.5 rounded text-[9px]" style="background: var(--input-bg); color: var(--input-text);">Down</kbd>
             {{ t('mapControls.clickToNavigate') }}
           </span>
         </div>
@@ -177,65 +178,69 @@
               v-for="(result, index) in searchResults"
               :key="`search-result-${index}`"
               :ref="el => { if (index === selectedIndex) selectedResultEl = el }"
-              :class="`group flex items-start p-2 rounded cursor-pointer transition-all duration-150 ${index === selectedIndex ? 'bg-cyan-900/30 ring-1 ring-cyan-500/50' : 'hover:bg-cyan-950/20'}`"
+              :class="`group flex items-start p-2 rounded cursor-pointer transition-all duration-150 ${index === selectedIndex ? 'ring-1' : ''}`"
+              :style="{
+                background: index === selectedIndex ? 'var(--search-result-selected-bg)' : '',
+                boxShadow: index === selectedIndex ? '0 0 0 1px var(--search-result-selected-text)' : ''
+              }"
               @click="navigateToLocation(getResultLat(result), getResultLng(result), getResultTitle(result))"
               @mouseenter="selectedIndex = index"
               role="option"
               :aria-selected="index === selectedIndex"
             >
               <div class="flex-1 min-w-0">
-                <h4 :class="`text-sm font-medium truncate transition-colors ${index === selectedIndex ? 'text-cyan-300' : 'text-cyan-400 group-hover:text-cyan-300'}`">
+                <h4 class="text-sm font-medium truncate transition-colors text-[var(--search-result-text)] group-hover:text-[var(--search-result-selected-text)]">
                   {{ getResultTitle(result) }}
                 </h4>
                 <div class="flex justify-between items-center">
-                  <p class="text-xs text-gray-500 flex items-center">
+                  <p class="text-xs text-[var(--text-muted)] flex items-center">
                     <iconify-icon icon="lucide:map-pin" class="h-3 w-3 inline mr-1 flex-shrink-0" />
                     {{ getResultLocation(result) }}
                   </p>
-                  <p v-if="getProjectBeneficiaries(result)" class="text-xs text-gray-500">
+                  <p v-if="getProjectBeneficiaries(result)" class="text-xs text-[var(--text-muted)]">
                     {{ getProjectBeneficiaries(result)?.toLocaleString() }}
                   </p>
-                  <p v-else-if="getSpeciesGroup(result)" class="text-xs text-gray-500">
+                  <p v-else-if="getSpeciesGroup(result)" class="text-xs text-[var(--text-muted)]">
                     {{ getSpeciesGroup(result) }}
                   </p>
                 </div>
               </div>
-              <iconify-icon :class="`h-4 w-4 transition-all duration-150 flex-shrink-0 mt-1 ${index === selectedIndex ? 'text-cyan-400 opacity-100 translate-x-0' : 'text-cyan-500 opacity-0 group-hover:opacity-100 -translate-x-1'}`" icon="lucide:arrow-right" />
+              <iconify-icon class="h-4 w-4 transition-all duration-150 flex-shrink-0 mt-1 text-[var(--search-result-text)] opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0" icon="lucide:arrow-right" />
             </div>
           </template>
           <template v-else>
             <div v-if="searchQuery.length > 0" class="flex flex-col items-center justify-center py-6 text-center">
-              <iconify-icon icon="lucide:search-x" class="h-8 w-8 text-gray-700 mb-2" />
-              <p class="text-sm text-gray-400">{{ t('mapControls.noResults') }} "{{ searchQuery }}"</p>
-              <p class="text-xs text-gray-600 mt-1">{{ t('mapControls.tryDifferent') }}</p>
+              <iconify-icon icon="lucide:search-x" class="h-8 w-8 mb-2" style="color: var(--text-muted);" />
+              <p class="text-sm" style="color: var(--text-secondary);">{{ t('mapControls.noResults') }} "{{ searchQuery }}"</p>
+              <p class="text-xs mt-1" style="color: var(--text-muted);">{{ t('mapControls.tryDifferent') }}</p>
             </div>
             <div v-else-if="!showAllItems" class="flex flex-col space-y-3 items-center justify-center py-6">
               <div class="relative">
-                <iconify-icon icon="lucide:search" class="h-10 w-10 text-cyan-900/30" />
-                <iconify-icon icon="lucide:sparkles" class="h-4 w-4 text-purple-500/50 absolute -top-1 -right-1" />
+                <iconify-icon icon="lucide:search" class="h-10 w-10" style="color: var(--panel-border);" />
+                <iconify-icon icon="lucide:sparkles" class="h-4 w-4 text-white/30 absolute -top-1 -right-1" />
               </div>
-              <p class="text-xs text-gray-500 text-center">{{ t('mapControls.clickToNavigate') }}<br />{{ t('mapControls.browseAll') }}</p>
-              <UiButton variant="outline" size="sm" class="mt-1 text-xs border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 transition-all" @click="toggleAllItems">
+              <p class="text-xs text-center" style="color: var(--text-secondary);">{{ t('mapControls.clickToNavigate') }}<br />{{ t('mapControls.browseAll') }}</p>
+              <UiButton variant="outline" size="sm" class="mt-1 text-xs border-[var(--panel-border)] text-[var(--tool-btn-text)] hover:bg-[var(--tool-btn-active-bg)] hover:text-[var(--tool-btn-active-text)] transition-all" @click="toggleAllItems">
                 <iconify-icon icon="lucide:list" class="h-3 w-3 mr-1" />
                 {{ t('mapControls.showAll') }}
               </UiButton>
             </div>
             <div v-else class="flex items-center justify-center py-4">
               <div class="flex gap-1">
-                <div class="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style="animation-delay: 0ms" />
-                <div class="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style="animation-delay: 150ms" />
-                <div class="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style="animation-delay: 300ms" />
+                <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 0ms" />
+                <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 150ms" />
+                <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 300ms" />
               </div>
             </div>
           </template>
         </div>
 
         <!-- Footer -->
-        <div class="mt-3 pt-2 border-t border-cyan-900/30 flex justify-between items-center">
-          <p class="text-xs text-gray-500">
+        <div class="mt-3 pt-2 border-t flex justify-between items-center" style="border-color: var(--panel-border);">
+          <p class="text-xs" style="color: var(--text-muted);">
             {{ showAllItems ? t('mapControls.allItems') : searchQuery ? t('mapControls.results') : t('mapControls.recent') }}: {{ searchResults.length || recentSearches.length }}
           </p>
-          <p v-if="selectedIndex >= 0 && searchResults.length > 0" class="text-xs text-cyan-400 flex items-center gap-1">
+          <p v-if="selectedIndex >= 0 && searchResults.length > 0" class="text-xs text-[var(--tool-btn-text)] flex items-center gap-1">
             <iconify-icon icon="lucide:arrow-up-down" class="h-3 w-3" />
             {{ selectedIndex + 1 }} {{ t('mapControls.of') || 'of' }} {{ searchResults.length }}
           </p>

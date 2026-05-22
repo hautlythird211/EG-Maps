@@ -5,7 +5,7 @@
         <header class="max-w-[min(100%,38rem)]">
           <div class="mb-[clamp(1.5rem,4vw,2rem)] flex items-center gap-[clamp(0.75rem,2vw,1rem)]">
             <img
-              src="/eg-logo.png"
+              :src="`${baseURL}eg-logo.png`"
               alt="Earth Guardians"
               class="h-[clamp(3rem,8vw,4rem)] w-[clamp(3rem,8vw,4rem)] rounded-full border border-black object-contain"
               loading="eager"
@@ -100,6 +100,7 @@ import { allProjectsData } from '@/lib/project-data'
 import speciesData from '~/public/data/species.json'
 
 const { t } = useI18n()
+const baseURL = useRuntimeConfig().app.baseURL
 
 useHead({
   title: computed(() => `${t('home.title')} - ${t('home.subtitle')}`),

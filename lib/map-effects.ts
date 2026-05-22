@@ -39,25 +39,29 @@ export function buildMapConnectionFeatures({
 }
 
 function buildProjectConnectionFeatures(projects: ProjectData[], isMobile: boolean): MapConnectionFeature[] {
-  const maxConnectionsPerProject = isMobile ? 2 : 3
+  const maxConnectionsPerProject = 1
   const projectsToProcess = isMobile ? projects.slice(0, Math.min(15, projects.length)) : projects
-  const usedAsTarget = new Set<string>()
+  const incomingCountByProject = new Map<string, number>()
+  const edgeKeys = new Set<string>()
   const features: MapConnectionFeature[] = []
 
   projectsToProcess.forEach((project) => {
     if (!isValidCoordinate(project.latitude, project.longitude)) return
 
+    const projectKey = project.project_title
+
     const availableTargets = projectsToProcess
       .filter(p =>
         p.project_title !== project.project_title &&
         isValidCoordinate(p.latitude, p.longitude) &&
-        !usedAsTarget.has(p.project_title)
+        !edgeKeys.has([projectKey, p.project_title].sort().join('::')) &&
+        (incomingCountByProject.get(p.project_title) ?? 0) < 1
       )
       .map(target => ({
         target,
         distance: calculateDistance(project.latitude, project.longitude, target.latitude, target.longitude),
       }))
-      .sort((a, b) => b.distance - a.distance)
+      .sort((a, b) => a.distance - b.distance)
 
     const connectionsToMake = Math.min(maxConnectionsPerProject, availableTargets.length)
 
@@ -65,20 +69,20 @@ function buildProjectConnectionFeatures(projects: ProjectData[], isMobile: boole
       const target = availableTargets[i]?.target
       if (!target) continue
 
-      const totalBeneficiaries = project.direct_beneficiaries + project.indirect_beneficiaries
-      const intensity = totalBeneficiaries > 1000 ? 0.9 : totalBeneficiaries > 500 ? 0.7 : totalBeneficiaries > 100 ? 0.5 : 0.35
       const color = getProjectColorByBeneficiaries(project.direct_beneficiaries, project.indirect_beneficiaries)
 
       features.push(createConnectionFeature({
         from: [project.longitude, project.latitude],
         to: [target.longitude, target.latitude],
         color,
-        opacity: 0.32 * intensity,
-        weight: 1.5 + intensity,
+        opacity: 0.2,
+        weight: 1.55,
         dataset: 'project-grants',
       }))
 
-      usedAsTarget.add(target.project_title)
+      const targetKey = target.project_title
+      edgeKeys.add([projectKey, targetKey].sort().join('::'))
+      incomingCountByProject.set(targetKey, (incomingCountByProject.get(targetKey) ?? 0) + 1)
     }
   })
 

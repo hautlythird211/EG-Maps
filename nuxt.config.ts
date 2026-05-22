@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const baseURL = process.env.NUXT_APP_BASE_URL || '/'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
@@ -15,7 +17,7 @@ export default defineNuxtConfig({
 
   // App configuration
   app: {
-    baseURL: process.env.NUXT_APP_BASE_URL || '/',
+    baseURL,
     head: {
       title: 'Earth Guardians - Interactive Data Visualization',
       meta: [
@@ -42,8 +44,8 @@ export default defineNuxtConfig({
         },
       ],
       link: [
-        { rel: 'icon', type: 'image/png', href: '/eg-logo.png' },
-        { rel: 'manifest', href: '/manifest.json' },
+        { rel: 'icon', type: 'image/png', href: `${baseURL}eg-logo.png` },
+        { rel: 'manifest', href: `${baseURL}manifest.json` },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
       ],
@@ -72,6 +74,7 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       routes: ['/', '/globe', '/info', '/project-grants', '/project-grants/3d', '/endangered-species', '/endangered-species/3d'],
+      ignore: ['/EG-Maps/manifest.json'],
     },
     compressPublicAssets: true,
   },

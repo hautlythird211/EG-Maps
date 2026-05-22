@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 export type Locale = 'en' | 'es' | 'pt' | 'fr'
 
@@ -7,7 +7,6 @@ export interface Translation {
 }
 
 const localeState = ref<Locale>('en')
-let initialized = false
 
 const localeIds: Locale[] = ['en', 'es', 'pt', 'fr']
 
@@ -786,7 +785,7 @@ const translations: Record<Locale, Translation> = {
   },
 }
 
-function getInitialLocale(): Locale {
+function detectLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
 
   const stored = localStorage.getItem('eg-maps-locale')
@@ -826,9 +825,17 @@ function interpolate(template: string, args: unknown[]): string {
 }
 
 export function useI18n() {
-  if (!initialized) {
-    localeState.value = getInitialLocale()
-    initialized = true
+  if (typeof window !== 'undefined' && localeState.value === 'en') {
+    const detected = detectLocale()
+    if (detected !== 'en') {
+      try {
+        onMounted(() => {
+          localeState.value = detected
+        })
+      } catch {
+        localeState.value = detected
+      }
+    }
   }
 
   function t(key: string, ...args: unknown[]): string {

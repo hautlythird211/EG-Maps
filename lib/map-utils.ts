@@ -43,7 +43,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
     unknownLocation: 'Unknown location'
   }
   return `
-    <div class="project-popup-wrapper" style="word-wrap: break-word; white-space: normal; overflow: hidden;">
+    <div class="project-popup-wrapper" style="word-wrap: break-word; white-space: normal; overflow-wrap: anywhere; overflow: hidden;">
       <div class="project-popup-header">
         <div class="project-corner-accent top-left"></div>
         <div class="project-corner-accent top-right"></div>
@@ -52,7 +52,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
             <span class="project-badge">${t.projectGrantee}</span>
             <span class="project-indicator" style="background: ${color}"></span>
           </div>
-          <h3 class="project-title" style="word-wrap: break-word; white-space: normal;">${escapeHtml(project.project_title)}</h3>
+          <h3 class="project-title" style="word-wrap: break-word; white-space: normal; overflow-wrap: anywhere;">${escapeHtml(project.project_title)}</h3>
         </div>
         <div class="project-header-line"></div>
       </div>
@@ -63,7 +63,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
           </div>
           <div class="project-stat-content">
             <span class="project-stat-label">${t.location}</span>
-            <span class="project-stat-value" style="word-wrap: break-word; white-space: normal;">${escapeHtml(project.country_province || t.unknownLocation)}</span>
+            <span class="project-stat-value" style="word-wrap: break-word; white-space: normal; overflow-wrap: anywhere;">${escapeHtml(project.country_province || t.unknownLocation)}</span>
           </div>
         </div>
         <div class="project-divider"></div>
@@ -91,7 +91,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
   `
 }
 
-export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPopupTranslations): string {
+export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPopupTranslations, baseURL?: string): string {
   const color = GROUP_COLORS[species.taxonomicGroup] ?? '#B64032'
   const endangermentColor = species.endangerment.toLowerCase().includes('critical') ? '#dc2626' : 
                             species.endangerment.toLowerCase().includes('endangered') ? '#ea580c' : '#d97706'
@@ -108,7 +108,10 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
   let imageHTML = ''
   if (species.imageUrl) {
     let thumbUrl = species.imageUrl
-    if (species.imageUrl.includes('commons.wikimedia.org/wiki/Special:FilePath/')) {
+    const isLocal = !species.imageUrl.startsWith('http://') && !species.imageUrl.startsWith('https://')
+    if (isLocal) {
+      thumbUrl = baseURL && baseURL !== '/' ? baseURL + species.imageUrl.replace(/^\//, '') : species.imageUrl
+    } else if (species.imageUrl.includes('commons.wikimedia.org/wiki/Special:FilePath/')) {
       const filename = species.imageUrl.split('/Special:FilePath/')[1]
       if (filename) {
         thumbUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(filename)}?width=560`
@@ -129,7 +132,7 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
     <div class="species-popup-wrapper" style="word-wrap: break-word; white-space: normal; overflow: hidden;">
       ${imageHTML}
       <div class="species-header" style="border-bottom-color: ${color}40;">
-        <div class="species-header-bg" style="background: linear-gradient(135deg, ${color}15, transparent);"></div>
+        <div class="species-header-bg" style="background: ${color}08;"></div>
         <div class="species-ornament top">
           <svg width="60" height="12" viewBox="0 0 60 12">
             <path d="M0 6 L15 6 L20 2 L25 10 L30 4 L35 8 L40 6 L60 6" stroke="${color}" fill="none" stroke-width="1" opacity="0.6"/>
@@ -193,7 +196,7 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
         </div>
       </div>
       <div class="species-footer">
-        <div class="species-footer-line" style="background: linear-gradient(90deg, transparent, ${color}, transparent);"></div>
+        <div class="species-footer-line" style="background: rgba(128, 128, 128, 0.3);"></div>
       </div>
     </div>
   `

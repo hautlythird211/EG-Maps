@@ -1,7 +1,7 @@
 <template>
   <div
-    :class="`absolute ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] max-w-full' : 'top-20 right-16 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 species-filter-panel transition-all duration-300`"
-    :style="{ zIndex: 'var(--z-map-ui-controls)' }"
+    :class="`fixed ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] max-w-full' : 'top-20 left-4 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 species-filter-panel transition-all duration-300`"
+    :style="{ zIndex: '10001' }"
   >
     <!-- Header -->
     <div class="flex justify-between items-center mb-3">
@@ -15,15 +15,6 @@
         </span>
       </div>
       <UiButton
-        v-if="isMobile"
-        variant="ghost"
-        size="icon"
-        class="h-7 w-7 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 rounded"
-        @click="isCollapsed = !isCollapsed"
-      >
-        <iconify-icon :icon="isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'" class="h-4 w-4" />
-      </UiButton>
-      <UiButton
         v-if="hasActiveFilters"
         variant="ghost"
         size="sm"
@@ -35,22 +26,22 @@
       </UiButton>
     </div>
 
-    <div v-if="!isCollapsed" :class="isMobile ? 'max-h-[calc(100svh-11rem)] overflow-y-auto overflow-x-hidden pr-1 space-y-2' : 'max-h-[calc(100svh-9rem)] overflow-y-auto pr-1'">
+    <div :class="isMobile ? 'max-h-[calc(100svh-11rem)] overflow-y-auto overflow-x-hidden pr-1 space-y-2' : 'max-h-[calc(100svh-9rem)] overflow-y-auto pr-1'">
     <!-- Search Input with enhanced UX -->
     <div :class="isMobile ? 'mb-2' : 'mb-3'">
       <div class="relative">
-        <iconify-icon icon="lucide:search" class="absolute left-2.5 top-2 h-4 w-4 text-gray-500 pointer-events-none" />
+        <iconify-icon icon="lucide:search" class="absolute left-2.5 top-2 h-4 w-4 text-white/50 pointer-events-none" />
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="t('filter.searchPlaceholder')"
-          class="filter-search w-full pl-8 pr-8 py-1.5 bg-black/50 border border-cyan-900/50 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+          class="filter-search w-full pl-8 pr-8 py-1.5 bg-black/50 border border-cyan-900/50 rounded text-sm text-white placeholder-white/50 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
           :aria-label="t('filter.searchPlaceholder')"
         />
         <button
           v-if="searchQuery"
           @click="searchQuery = ''"
-          class="absolute right-2.5 top-1.5 h-5 w-5 flex items-center justify-center rounded-full bg-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-600/50 transition-colors"
+          class="absolute right-2.5 top-1.5 h-5 w-5 flex items-center justify-center rounded-full bg-gray-700/50 text-white/70 hover:text-white hover:bg-gray-600/50 transition-colors"
         >
           <iconify-icon icon="lucide:x" class="h-3 w-3" />
         </button>
@@ -97,32 +88,46 @@
       </button>
     </div>
 
-    <!-- Taxonomic Group Filter -->
+    <!-- Taxonomic Group Filter (collapsible) -->
     <div :class="isMobile ? 'filter-group mb-2' : 'filter-group mb-2.5'">
-      <label class="filter-label block text-[10px] font-heading font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">
-        {{ t('filter.taxonomicGroup') }}
-      </label>
-      <select
-        value=""
-        @change="handleTaxonomicSelect"
-        class="filter-select w-full px-2.5 py-1.5 bg-black/50 border border-cyan-900/50 rounded text-xs text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all cursor-pointer"
-        :aria-label="t('filter.taxonomicGroup')"
+      <button
+        @click="taxonomicGroupCollapsed = !taxonomicGroupCollapsed"
+        class="flex items-center gap-1.5 w-full text-left mb-1"
       >
-        <option value="">{{ selectedTaxonomicGroups.length ? t('filter.addGroup') : t('filter.allGroups') }}</option>
-        <option v-for="group in taxonomicGroups" :key="group" :value="group">
-          {{ selectedTaxonomicGroups.includes(group) ? t('filter.removeGroup', { group: groupLabel(group) }) : groupLabel(group) }}
-        </option>
-      </select>
-      <div v-if="selectedTaxonomicGroups.length" :class="isMobile ? 'mt-1.5 flex flex-wrap gap-1' : 'mt-1.5 flex flex-wrap gap-1.5'">
-        <button
-          v-for="group in selectedTaxonomicGroups"
-          :key="`selected-${group}`"
-          class="inline-flex items-center gap-1 rounded border border-cyan-500/40 bg-cyan-500/15 px-1.5 py-0.5 text-[10px] text-cyan-300 whitespace-nowrap"
-          @click="toggleTaxonomicGroup(group)"
+        <iconify-icon
+          :icon="taxonomicGroupCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'"
+          class="h-4 w-4 text-white/70 transition-transform"
+        />
+        <span class="text-[10px] font-heading font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+          {{ t('filter.taxonomicGroup') }}
+        </span>
+        <span v-if="selectedTaxonomicGroups.length" class="ml-auto px-1.5 py-0.5 rounded text-[10px] bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+          {{ selectedTaxonomicGroups.length }}
+        </span>
+      </button>
+      <div v-if="!taxonomicGroupCollapsed" class="animate-fade-in">
+        <select
+          value=""
+          @change="handleTaxonomicSelect"
+          class="filter-select w-full px-2.5 py-1.5 bg-black/50 border border-cyan-900/50 rounded text-xs text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all cursor-pointer"
+          :aria-label="t('filter.taxonomicGroup')"
         >
-          {{ groupLabel(group) }}
-          <iconify-icon icon="lucide:x" class="h-3 w-3" />
-        </button>
+          <option value="">{{ selectedTaxonomicGroups.length ? t('filter.addGroup') : t('filter.allGroups') }}</option>
+          <option v-for="group in taxonomicGroups" :key="group" :value="group">
+            {{ selectedTaxonomicGroups.includes(group) ? t('filter.removeGroup', { group: groupLabel(group) }) : groupLabel(group) }}
+          </option>
+        </select>
+        <div v-if="selectedTaxonomicGroups.length" :class="isMobile ? 'mt-1.5 flex flex-wrap gap-1' : 'mt-1.5 flex flex-wrap gap-1.5'">
+          <button
+            v-for="group in selectedTaxonomicGroups"
+            :key="`selected-${group}`"
+            class="inline-flex items-center gap-1 rounded border border-cyan-500/40 bg-cyan-500/15 px-1.5 py-0.5 text-[10px] text-cyan-300 whitespace-nowrap"
+            @click="toggleTaxonomicGroup(group)"
+          >
+            {{ groupLabel(group) }}
+            <iconify-icon icon="lucide:x" class="h-3 w-3" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -184,7 +189,7 @@
       <!-- Progress bar -->
       <div class="h-1 bg-gray-800 rounded-full overflow-hidden">
         <div
-          class="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-300 ease-out"
+          class="h-full bg-[var(--text-primary)] transition-all duration-300 ease-out"
           :style="{ width: `${filteredPercent}%` }"
         />
       </div>
@@ -226,13 +231,8 @@ const filters = reactive({
 
 const searchQuery = ref('')
 const showAllGroups = ref(false)
+const taxonomicGroupCollapsed = ref(true)
 const selectedTaxonomicGroups = ref<string[]>([])
-const isCollapsed = ref(isMobile.value)
-
-watch(isMobile, (mobile) => {
-  isCollapsed.value = mobile
-})
-
 // Extract unique filter values from species data
 const taxonomicGroups = computed(() =>
   [...new Set(props.species.map(s => s.taxonomicGroup))].sort()
@@ -362,7 +362,7 @@ defineExpose({
 
 <style scoped>
 .filter-search::placeholder {
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .filter-search:focus {

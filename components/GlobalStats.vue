@@ -9,7 +9,7 @@
       <div class="flex items-center gap-2">
         <div class="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.75)]" />
         <h2
-          :class="`font-semibold text-cyan-100 uppercase tracking-wider ${
+          :class="`font-semibold text-[var(--tool-btn-text)] uppercase tracking-wider ${
             isExpanded ? (isMobile ? 'text-sm' : 'text-base') : 'text-xs'
           }`"
         >
@@ -20,7 +20,7 @@
         <UiButton
           variant="ghost"
           size="icon"
-          :class="`${isMobile ? 'h-8 w-8' : 'h-7 w-7'} text-cyan-300 hover:text-white hover:bg-cyan-500/15 rounded-md transition-colors duration-150`"
+          :class="`${isMobile ? 'h-8 w-8' : 'h-7 w-7'} text-[var(--tool-btn-text)] hover:text-[var(--tool-btn-active-text)] hover:bg-[var(--tool-btn-active-bg)] rounded-md transition-colors duration-150`"
           @click="isExpanded = !isExpanded"
           :title="isExpanded ? t('stats.collapse') : t('stats.expand')"
         >
@@ -30,7 +30,7 @@
         <UiButton
           variant="ghost"
           size="icon"
-          :class="`${isMobile ? 'h-8 w-8' : 'h-7 w-7'} text-gray-400 hover:text-white hover:bg-gray-500/20 rounded-md transition-colors duration-150`"
+          :class="`${isMobile ? 'h-8 w-8' : 'h-7 w-7'} text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--search-result-hover-bg)] rounded-md transition-colors duration-150`"
           @click="closePanel"
           :title="t('stats.close')"
         >
@@ -54,8 +54,8 @@
         :value="stats.countriesCount"
         :display-value="formatNumber(stats.countriesCount)"
         :label="t('stats.countries')"
-        accent-color="text-cyan-300"
-        :glow-color-r-g-b="[56, 189, 248]"
+        accent-color="text-[var(--text-primary)]"
+        :glow-color-r-g-b="[128, 128, 128]"
         :is-mobile="isMobile"
       />
       <UiStatCard
@@ -63,8 +63,8 @@
         :value="stats.totalDirectBeneficiaries"
         :display-value="formatNumber(stats.totalDirectBeneficiaries)"
         :label="t('stats.directBeneficiaries')"
-        accent-color="text-purple-400"
-        :glow-color-r-g-b="[192, 132, 252]"
+        accent-color="text-[var(--text-primary)]"
+        :glow-color-r-g-b="[128, 128, 128]"
         :is-mobile="isMobile"
       />
       <UiStatCard
@@ -136,11 +136,9 @@ function formatNumber(num: number): string {
 
 <style scoped>
 .stats-panel {
-  border-color: rgba(6, 182, 212, 0.35);
   border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(168, 85, 247, 0.06)),
-    rgba(0, 0, 0, 0.82);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 24px rgba(6, 182, 212, 0.14);
+  background: var(--panel-bg);
+  border-color: var(--panel-border);
+  box-shadow: var(--panel-shadow);
 }
 </style>

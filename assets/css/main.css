@@ -6,40 +6,70 @@
 
 @layer base {
   :root {
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #111111;
-    --bg-tertiary: #1a1a1a;
-    --text-primary: #e5e5e5;
-    --text-secondary: #a3a3a3;
-    --text-muted: #7373a3;
-    --border-color: #262626;
-    --shadow-color: rgba(0, 0, 0, 0.5);
-    --map-bg: #000000;
+    /* Light mode (default) */
+    --bg-primary: #fafafa;
+    --bg-secondary: #f5f5f5;
+    --bg-tertiary: #ffffff;
+    --text-primary: #0a0a0a;
+    --text-secondary: #525252;
+    --text-muted: #a3a3a3;
+    --border-color: #d4d4d4;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --map-bg: #e8e8e8;
     --cyber-cyan: #06b6d4;
     --cyber-purple: #a855f7;
     --cyber-pink: #ec4899;
     --cyber-green: #10b981;
 
-    /* Tailwind CSS semantic tokens */
-    --background: #0a0a0a;
-    --foreground: #e5e5e5;
+    /* Tailwind CSS semantic tokens - light */
+    --background: #fafafa;
+    --foreground: #0a0a0a;
     --primary: #06b6d4;
     --primary-foreground: #ffffff;
-    --secondary: #1a1a1a;
-    --secondary-foreground: #e5e5e5;
-    --muted: #1a1a1a;
-    --muted-foreground: #7373a3;
+    --secondary: #f5f5f5;
+    --secondary-foreground: #0a0a0a;
+    --muted: #f5f5f5;
+    --muted-foreground: #a3a3a3;
     --accent: #a855f7;
     --accent-foreground: #ffffff;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
     --ring: #06b6d4;
-    --border: #262626;
-    --input: #262626;
-    --card: #111111;
-    --card-foreground: #e5e5e5;
-    --popover: #111111;
-    --popover-foreground: #e5e5e5;
+    --border: #d4d4d4;
+    --input: #d4d4d4;
+    --card: #ffffff;
+    --card-foreground: #0a0a0a;
+    --popover: #ffffff;
+    --popover-foreground: #0a0a0a;
+
+    /* Panel / control variables - light */
+    --panel-bg: rgba(255, 255, 255, 0.92);
+    --panel-border: rgba(6, 182, 212, 0.25);
+    --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.1), 0 0 24px rgba(6, 182, 212, 0.06);
+    --tool-btn-bg: rgba(255, 255, 255, 0.95);
+    --tool-btn-border: #000;
+    --tool-btn-text: #000;
+    --tool-btn-active-bg: #000;
+    --tool-btn-active-text: #fff;
+    --tool-btn-active-border: #000;
+    --tool-btn-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    --tool-btn-muted-border: rgba(0, 0, 0, 0.15);
+    --tool-btn-muted-text: #9ca3af;
+    --stat-card-bg: rgba(255, 255, 255, 0.5);
+    --stat-card-border: rgba(0, 0, 0, 0.08);
+    --stat-card-text: #525252;
+    --stat-card-label: #737373;
+    --tooltip-bg: #0a0a0a;
+    --tooltip-text: #ffffff;
+    --input-bg: rgba(0, 0, 0, 0.04);
+    --input-border: rgba(6, 182, 212, 0.25);
+    --input-text: #171717;
+    --input-placeholder: #a3a3a3;
+    --search-result-hover-bg: rgba(6, 182, 212, 0.06);
+    --search-result-selected-bg: rgba(6, 182, 212, 0.12);
+    --search-result-text: #0891b2;
+    --search-result-selected-text: #0369a1;
+    --panel-bg-gradient: none;
 
     /* Z-index scale */
     --z-map-base: 1;
@@ -73,6 +103,56 @@
     --border-color: #262626;
     --shadow-color: rgba(0, 0, 0, 0.5);
     --map-bg: #000000;
+
+    /* Tailwind CSS semantic tokens - dark */
+    --background: #0a0a0a;
+    --foreground: #e5e5e5;
+    --primary: #06b6d4;
+    --primary-foreground: #ffffff;
+    --secondary: #1a1a1a;
+    --secondary-foreground: #e5e5e5;
+    --muted: #1a1a1a;
+    --muted-foreground: #7373a3;
+    --accent: #a855f7;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --ring: #06b6d4;
+    --border: #262626;
+    --input: #262626;
+    --card: #111111;
+    --card-foreground: #e5e5e5;
+    --popover: #111111;
+    --popover-foreground: #e5e5e5;
+
+    /* Panel / control variables - dark */
+    --panel-bg: rgba(0, 0, 0, 0.88);
+    --panel-border: rgba(6, 182, 212, 0.35);
+    --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 24px rgba(6, 182, 212, 0.14);
+    --tool-btn-bg: rgba(0, 0, 0, 0.80);
+    --tool-btn-border: rgba(6, 182, 212, 0.4);
+    --tool-btn-text: #67e8f9;
+    --tool-btn-active-bg: rgba(6, 182, 212, 0.15);
+    --tool-btn-active-text: #fff;
+    --tool-btn-active-border: rgba(6, 182, 212, 0.6);
+    --tool-btn-shadow: 0 0 18px rgba(6, 182, 212, 0.16);
+    --tool-btn-muted-border: rgba(255, 255, 255, 0.15);
+    --tool-btn-muted-text: #6b7280;
+    --stat-card-bg: rgba(0, 0, 0, 0.35);
+    --stat-card-border: rgba(255, 255, 255, 0.1);
+    --stat-card-text: #d4d4d4;
+    --stat-card-label: #a3a3a3;
+    --tooltip-bg: #111111;
+    --tooltip-text: #ffffff;
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(6, 182, 212, 0.35);
+    --input-text: #ffffff;
+    --input-placeholder: #6b7280;
+    --search-result-hover-bg: rgba(6, 182, 212, 0.08);
+    --search-result-selected-bg: rgba(6, 182, 212, 0.2);
+    --search-result-text: #22d3ee;
+    --search-result-selected-text: #67e8f9;
+    --panel-bg-gradient: none;
   }
 
   * {
@@ -132,16 +212,17 @@
   }
 
   .cyber-btn-primary {
-    @apply px-4 py-2 bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-medium rounded-md
-           hover:from-cyan-500 hover:to-purple-500 transition-all duration-200
-           shadow-[0_0_15px_rgba(6,182,212,0.3)]
-           focus:outline-none focus:ring-2 focus:ring-cyan-400;
+    @apply px-4 py-2 bg-[var(--text-primary)] text-[var(--bg-primary)] font-medium rounded-md
+           hover:opacity-80 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-[var(--text-primary)];
   }
 
   /* Panel styles - cyberpunk */
   .panel-cyber {
-    @apply bg-black/[0.88] backdrop-blur-md border border-cyan-900/50 rounded-md
-           shadow-[0_16px_44px_rgba(0,0,0,0.42),0_0_18px_rgba(6,182,212,0.16)];
+    @apply backdrop-blur-md border rounded-md;
+    background: var(--panel-bg);
+    border-color: var(--panel-border);
+    box-shadow: var(--panel-shadow);
   }
 
   .map-tool-stack {
@@ -149,18 +230,35 @@
   }
 
   .map-tool-button {
-    @apply h-10 w-10 rounded-md border border-cyan-900/50 bg-black/75 text-cyan-400
-           shadow-[0_0_10px_rgba(6,182,212,0.18)] transition-all duration-150
-           hover:bg-cyan-950/[0.35] hover:text-cyan-200 hover:border-cyan-700/60
-           focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black;
+    @apply h-10 w-10 rounded-lg backdrop-blur-xl transition-all duration-150
+           focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2;
+    background: var(--tool-btn-bg);
+    border: 1px solid var(--tool-btn-border);
+    color: var(--tool-btn-text);
+    box-shadow: var(--tool-btn-shadow);
+  }
+  .map-tool-button:hover {
+    background: var(--tool-btn-active-bg);
+    color: var(--tool-btn-active-text);
+    border-color: var(--tool-btn-active-border);
   }
 
   .map-tool-button-active {
-    @apply border-cyan-500/60 bg-cyan-900/[0.45] text-cyan-100 shadow-[0_0_18px_rgba(6,182,212,0.28)];
+    border-color: var(--tool-btn-active-border);
+    color: var(--tool-btn-active-text);
+    background: var(--tool-btn-active-bg);
   }
 
   .map-tool-button-muted {
-    @apply border-gray-700/60 bg-black/[0.65] text-gray-500 shadow-none hover:text-gray-300 hover:border-gray-600;
+    border-color: var(--tool-btn-muted-border);
+    color: var(--tool-btn-muted-text);
+    box-shadow: none;
+    background: var(--tool-btn-bg);
+  }
+  .map-tool-button-muted:hover {
+    color: var(--tool-btn-text);
+    border-color: var(--tool-btn-border);
+    background: var(--tool-btn-active-bg);
   }
 
   .map-view-switcher {
@@ -348,7 +446,7 @@
   }
 
   .filter-search::placeholder {
-    color: #6b7280;
+    color: rgba(255, 255, 255, 0.5);
   }
 
   .filter-search:focus {

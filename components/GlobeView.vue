@@ -4,18 +4,18 @@
     <Transition name="fade">
       <div v-if="isLoading" class="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
         <div class="relative mb-6">
-          <div class="w-20 h-20 rounded-full border-4 border-cyan-500/20 border-t-cyan-500 animate-spin" />
-          <div class="absolute inset-0 w-20 h-20 rounded-full border-4 border-purple-500/20 border-b-purple-500 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
+          <div class="w-20 h-20 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+          <div class="absolute inset-0 w-20 h-20 rounded-full border-4 border-white/10 border-b-white/50 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
           <div class="absolute inset-0 flex items-center justify-center">
-            <Icon name="lucide:globe" class="w-8 h-8 text-cyan-400 animate-pulse" />
+            <Icon name="lucide:globe" class="w-8 h-8 text-white/70 animate-pulse" />
           </div>
         </div>
-        <p class="text-cyan-400 font-medium mb-2">{{ t('globe.loading') }}</p>
+        <p class="text-white font-medium mb-2">{{ t('globe.loading') }}</p>
         <p class="text-gray-500 text-sm">{{ t('globe.preparingData', { dataset: activeDataset === 'project-grants' ? t('home.projectGrants').toLowerCase() : t('home.species').toLowerCase() }) }}</p>
         <div class="mt-4 flex gap-1">
-          <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 0ms" />
-          <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 150ms" />
-          <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 300ms" />
+          <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 0ms" />
+          <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 150ms" />
+          <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 300ms" />
         </div>
       </div>
     </Transition>
@@ -24,25 +24,25 @@
     <div class="star-field" aria-hidden="true"></div>
 
     <!-- Black void overlay for globe edges -->
-    <div class="absolute inset-0 pointer-events-none z-10 bg-black/40"></div>
+    <div class="absolute inset-0 pointer-events-none z-10 bg-black/20"></div>
 
     <!-- Subtle radial glow behind globe -->
-    <div class="absolute inset-0 pointer-events-none z-10 bg-gradient-radial from-cyan-900/10 via-transparent to-transparent"></div>
+    <div class="absolute inset-0 pointer-events-none z-10 bg-black/5 dark:bg-white/5"></div>
 
     <!-- Atmospheric glow effect -->
     <div class="absolute inset-0 pointer-events-none z-10">
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-gradient-to-r from-cyan-500/10 via-purple-500/5 to-emerald-500/10 blur-3xl animate-pulse-slow" />
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-black/5 dark:bg-white/5 blur-3xl animate-pulse-slow" />
     </div>
 
     <!-- Vignette -->
-    <div class="absolute inset-0 pointer-events-none z-20" style="box-shadow: inset 0 0 200px 40px rgba(0,0,0,0.9)"></div>
+    <div class="absolute inset-0 pointer-events-none z-20" style="box-shadow: inset 0 0 150px 30px rgba(0,0,0,0.7)"></div>
 
     <!-- Grid overlay with image-set for 2x resolution -->
     <div
       class="absolute inset-0 pointer-events-none opacity-[0.03]"
       :style="{
         zIndex: 'calc(var(--z-map-effects) + 1)',
-        backgroundImage: 'image-set(url(/grid-overlay.png) 1x, url(/grid-overlay.png) 2x)',
+        backgroundImage: `image-set(url(${baseURL}grid-overlay.png) 1x, url(${baseURL}grid-overlay.png) 2x)`,
         backgroundRepeat: 'repeat',
       }"
     />
@@ -52,7 +52,7 @@
       class="absolute inset-0 pointer-events-none opacity-[0.02] animate-noise-bg"
       :style="{
         zIndex: 'calc(var(--z-map-effects) + 2)',
-        backgroundImage: 'image-set(url(/noise.png) 1x, url(/noise.png) 2x)',
+        backgroundImage: `image-set(url(${baseURL}noise.png) 1x, url(${baseURL}noise.png) 2x)`,
         backgroundRepeat: 'repeat',
       }"
     />
@@ -62,7 +62,7 @@
       class="absolute inset-0 pointer-events-none opacity-[0.015]"
       :style="{
         zIndex: 'calc(var(--z-map-effects) + 3)',
-        backgroundImage: 'image-set(url(/scanline.gif) 1x, url(/scanline.gif) 2x)',
+        backgroundImage: `image-set(url(${baseURL}scanline.gif) 1x, url(${baseURL}scanline.gif) 2x)`,
         backgroundRepeat: 'repeat',
       }"
     />
@@ -80,10 +80,10 @@
 
     <!-- White Banner -->
     <div v-if="isMobile" class="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none px-2" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[240px] object-contain" loading="lazy" />
+      <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[240px] object-contain" loading="lazy" />
     </div>
     <div v-else class="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[15vh] max-w-[180px] -rotate-90 origin-center" loading="lazy" />
+      <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[15vh] max-w-[180px] -rotate-90 origin-center" loading="lazy" />
     </div>
 
     <!-- Global Stats (only shown for project grants) -->
@@ -94,11 +94,11 @@
     <!-- Species legend (for endangered species) -->
     <div v-if="activeDataset === 'endangered-species'" class="absolute left-4 bottom-20 sm:bottom-4 z-[600]">
       <div class="panel-cyber rounded-lg p-3 transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-        <h3 class="text-xs font-bold text-[var(--text-primary)] mb-2 flex items-center gap-1.5">
-          <Icon name="lucide:layers" class="h-3.5 w-3.5 text-cyan-400" />
-          {{ t('globe.taxonomicGroups') }}
-        </h3>
-        <div class="grid grid-cols-2 gap-1.5">
+        <button @click="taxonomicGroupsCollapsed = !taxonomicGroupsCollapsed" class="flex items-center gap-1.5 w-full text-left mb-2">
+          <Icon :name="taxonomicGroupsCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" class="h-4 w-4 text-white/70 transition-transform" />
+          <span class="text-xs font-bold text-[var(--text-primary)]">{{ t('globe.taxonomicGroups') }}</span>
+        </button>
+        <div v-if="!taxonomicGroupsCollapsed" class="grid grid-cols-2 gap-1.5 animate-fade-in">
           <div v-for="(color, group) in GROUP_COLORS" :key="group" class="flex items-center gap-1.5 group cursor-pointer">
             <div class="w-2.5 h-2.5 rounded-full transition-transform duration-200 group-hover:scale-125" :style="{ backgroundColor: color }" />
             <span class="text-[10px] text-[var(--text-secondary)] group-hover:text-cyan-400 transition-colors">{{ group }}</span>
@@ -125,12 +125,12 @@
     <Transition name="fade">
       <div v-if="hasError" class="absolute inset-0 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center text-white z-[2000]">
         <div class="relative mb-6">
-          <div class="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-orange-600 animate-pulse" />
-          <Icon name="lucide:alert-triangle" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-white" />
+          <div class="w-16 h-16 rounded-full bg-[var(--text-primary)]/10 animate-pulse" />
+          <Icon name="lucide:alert-triangle" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-[var(--text-primary)]" />
         </div>
         <h2 class="text-xl font-bold mb-2">{{ t('globe.unableToLoad') }}</h2>
         <p class="text-gray-400 mb-4 text-center px-4 max-w-md">{{ t('globe.connectionError') }}</p>
-        <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-lg text-white font-medium hover:opacity-90 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center gap-2">
+        <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg font-medium hover:opacity-80 transition-all duration-300 flex items-center gap-2">
           <Icon name="lucide:refresh-cw" class="h-4 w-4" />
           {{ t('globe.tryAgain') }}
         </button>
@@ -141,6 +141,12 @@
     <div v-if="showSpeciesOverlay" class="species-popup-overlay-fixed" @click.self="closeSpeciesOverlay">
       <button class="species-popup-close-btn-fixed" @click="closeSpeciesOverlay">&times;</button>
       <div class="species-popup-content-fixed" v-html="speciesOverlayHTML"></div>
+    </div>
+
+    <!-- Detached fullscreen project popup overlay -->
+    <div v-if="showProjectOverlay" class="project-popup-overlay-fixed" @click.self="closeProjectOverlay">
+      <button class="project-popup-close-btn-fixed" @click="closeProjectOverlay">&times;</button>
+      <div class="project-popup-content-fixed" v-html="projectOverlayHTML"></div>
     </div>
   </div>
 </template>
@@ -166,9 +172,12 @@ import {
   getMarkerImageUrl,
   preloadSpeciesImages,
   clearImageCache,
+  getMarkerPlaceholder,
+  getProjectPlaceholder,
 } from '@/lib/image-utils'
 
 const { t, locale } = useI18n()
+const baseURL = useRuntimeConfig().app.baseURL
 
 function getLocalizedSpecies(species: Species): Species {
   const content = species.content?.[locale.value] ?? species.content?.en
@@ -218,8 +227,11 @@ const isLoading = ref(true)
 const activeDataset = ref<'project-grants' | 'endangered-species'>(props.defaultDataset)
 const isHexGridVisible = ref(props.showHexGrid)
 const showConnections = ref(true)
+const taxonomicGroupsCollapsed = ref(true)
 const showSpeciesOverlay = ref(false)
 const speciesOverlayHTML = ref('')
+const showProjectOverlay = ref(false)
+const projectOverlayHTML = ref('')
 
 let map: maplibregl.Map | null = null
 let markers: maplibregl.Marker[] = []
@@ -227,6 +239,9 @@ let isMounted = true
 let pendingVisibilityUpdate = false
 let connectionFeatures: MapConnectionFeature[] = []
 let particleSystem: MapParticleSystem | null = null
+let rotationAnimationId: number | null = null
+let isUserInteracting = false
+let interactionTimeout: ReturnType<typeof setTimeout> | null = null
 
 function openSpeciesOverlay(species: Species) {
   const localizedSpecies = getLocalizedSpecies(species)
@@ -239,13 +254,31 @@ function openSpeciesOverlay(species: Species) {
     ecosystem: t('filter.ecosystem'),
     groupLabels: getTaxonomicGroupLabels()
   }
-  speciesOverlayHTML.value = buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations)
+  speciesOverlayHTML.value = buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations, baseURL)
   showSpeciesOverlay.value = true
 }
 
 function closeSpeciesOverlay() {
   showSpeciesOverlay.value = false
   speciesOverlayHTML.value = ''
+}
+
+function openProjectOverlay(project: ProjectData) {
+  const projectPopupTranslations = {
+    projectGrantee: t('stats.projectGrantees'),
+    directBeneficiaries: t('stats.directBeneficiaries'),
+    indirectBeneficiaries: t('stats.indirectBeneficiaries'),
+    location: t('project.location'),
+    status: t('project.status'),
+    unknownLocation: t('project.unknownLocation')
+  }
+  projectOverlayHTML.value = buildProjectPopupHTML(project, projectPopupTranslations)
+  showProjectOverlay.value = true
+}
+
+function closeProjectOverlay() {
+  showProjectOverlay.value = false
+  projectOverlayHTML.value = ''
 }
 
 const MAPTILER_API_KEY = useRuntimeConfig().public.maptilerApiKey || ''
@@ -270,6 +303,27 @@ function transformRequest(url: string, resourceType?: string) {
     }
   }
   return { url }
+}
+
+function startAutoRotate() {
+  if (!map || rotationAnimationId !== null) return
+  function rotate() {
+    if (!map || !isMounted || isUserInteracting) {
+      rotationAnimationId = null
+      return
+    }
+    const center = map.getCenter()
+    map.setCenter([center.lng - 0.15, center.lat])
+    rotationAnimationId = requestAnimationFrame(rotate)
+  }
+  rotationAnimationId = requestAnimationFrame(rotate)
+}
+
+function stopAutoRotate() {
+  if (rotationAnimationId !== null) {
+    cancelAnimationFrame(rotationAnimationId)
+    rotationAnimationId = null
+  }
 }
 
 async function initMap() {
@@ -315,6 +369,37 @@ async function initMap() {
       startParticles()
       setupHexGrid()
       startMarkerVisibilityCheck()
+      startAutoRotate()
+    })
+
+    map.on('dragstart', () => {
+      isUserInteracting = true
+      stopAutoRotate()
+      if (interactionTimeout) clearTimeout(interactionTimeout)
+    })
+
+    map.on('dragend', () => {
+      isUserInteracting = false
+      if (interactionTimeout) clearTimeout(interactionTimeout)
+      interactionTimeout = setTimeout(() => {
+        if (!isUserInteracting) startAutoRotate()
+      }, 3000)
+    })
+
+    map.on('scroll', () => {
+      isUserInteracting = true
+      stopAutoRotate()
+      if (interactionTimeout) clearTimeout(interactionTimeout)
+      interactionTimeout = setTimeout(() => {
+        isUserInteracting = false
+        startAutoRotate()
+      }, 3000)
+    })
+
+    map.on('touchstart', () => {
+      isUserInteracting = true
+      stopAutoRotate()
+      if (interactionTimeout) clearTimeout(interactionTimeout)
     })
 
     map.on('move', () => {
@@ -368,6 +453,7 @@ function getUnifiedMarkerMetrics(options: {
   centerScale?: number
   imageUrl?: string
   originalImageUrl?: string
+  group?: string
 }) {
   const hitSize = Math.max(34, Math.round(options.size + 12))
   const visualSize = Math.round(options.size)
@@ -379,6 +465,7 @@ function getUnifiedMarkerMetrics(options: {
     centerSize: Math.max(7, Math.round(visualSize * (options.centerScale ?? 0.42))),
     imageUrl: options.imageUrl,
     originalImageUrl: options.originalImageUrl,
+    group: options.group,
   }
 }
 
@@ -411,7 +498,7 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   inner.style.transform = 'scale(1)'
 
   if (metrics.originalImageUrl) {
-    const thumbUrl = getMarkerImageUrl(metrics.originalImageUrl)
+    const thumbUrl = getMarkerImageUrl(metrics.originalImageUrl, baseURL)
     if (thumbUrl) {
       inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${thumbUrl}")`
       inner.style.backgroundSize = 'cover'
@@ -422,13 +509,9 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
     inner.style.backgroundSize = 'cover'
     inner.style.backgroundPosition = 'center'
   } else {
-    const centerDot = document.createElement('div')
-    centerDot.style.width = `${metrics.centerSize}px`
-    centerDot.style.height = `${metrics.centerSize}px`
-    centerDot.style.backgroundColor = metrics.color
-    centerDot.style.borderRadius = '50%'
-    centerDot.style.boxShadow = `0 0 ${Math.max(3, metrics.centerSize * 0.5)}px ${metrics.color}`
-    inner.appendChild(centerDot)
+    inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${getMarkerPlaceholder(metrics.group)}")`
+    inner.style.backgroundSize = 'cover'
+    inner.style.backgroundPosition = 'center'
   }
 
   el.appendChild(inner)
@@ -453,7 +536,11 @@ function createProjectMarkerElement(project: ProjectData): HTMLElement {
   const markerSize = 15 + beneficiaryFactor * 10
   const color = getProjectColorByBeneficiaries(project.direct_beneficiaries, project.indirect_beneficiaries)
 
-  return createUnifiedMarkerElement(getUnifiedMarkerMetrics({ color, size: markerSize }))
+  return createUnifiedMarkerElement(getUnifiedMarkerMetrics({
+    color,
+    size: markerSize,
+    group: getProjectPlaceholder(project.project_title),
+  }))
 }
 
 function createSpeciesMarkerElement(species: Species): HTMLElement {
@@ -463,6 +550,7 @@ function createSpeciesMarkerElement(species: Species): HTMLElement {
     size: species.imageUrl ? 26 : 20,
     centerScale: 0.62,
     originalImageUrl: species.imageUrl || undefined,
+    group: species.taxonomicGroup,
   }))
 }
 
@@ -547,17 +635,13 @@ function rebuildMarkers() {
       if (!isValidCoordinate(project.latitude, project.longitude)) return
 
       const el = createProjectMarkerElement(project)
-      const popup = new maplibregl.Popup({
-        closeButton: true,
-        closeOnClick: true,
-        maxWidth: isMobile.value ? '260px' : '300px',
-        className: 'cyberpunk-popup',
-        offset: 15,
-      }).setHTML(buildProjectPopupHTML(project, projectPopupTranslations))
+      el.style.cursor = 'pointer'
+      el.addEventListener('click', () => {
+        openProjectOverlay(project)
+      })
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([project.longitude, project.latitude])
-        .setPopup(popup)
         .addTo(map!)
 
       markers.push(marker)
@@ -570,7 +654,7 @@ function rebuildMarkers() {
     const speciesToRender = data.filter(s => isValidCoordinate(s.lat, s.lng))
     const imageUrls = speciesToRender.map(s => s.imageUrl).filter(Boolean)
     
-    preloadSpeciesImages(imageUrls, true)
+    preloadSpeciesImages(imageUrls, true, baseURL)
 
     speciesToRender.forEach((species) => {
       const el = createSpeciesMarkerElement(species)
@@ -889,7 +973,7 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
     }
     .project-header-line {
       height: 1px;
-      background: linear-gradient(90deg, rgba(6, 182, 212, 0.4), rgba(168, 85, 247, 0.4), transparent);
+      background: var(--border-color);
       margin-top: 12px;
     }
     .project-popup-body {
@@ -1253,11 +1337,136 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
     .species-popup-content-fixed::-webkit-scrollbar-thumb:hover {
       background: rgba(6, 182, 212, 0.7);
     }
+    /* Fullscreen detached project popup overlay */
+    .project-popup-overlay-fixed {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: overlayFadeIn 0.2s ease-out;
+    }
+    .project-popup-close-btn-fixed {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 2147483647;
+      width: 44px;
+      height: 44px;
+      border: 2px solid rgba(6, 182, 212, 0.5);
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.7);
+      color: #06b6d4;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+    .project-popup-close-btn-fixed:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: #06b6d4;
+      transform: scale(1.1);
+    }
+    .project-popup-content-fixed {
+      width: 100%;
+      max-width: min(500px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      border-radius: 16px;
+      background: rgba(10, 10, 15, 0.95);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      box-shadow: 0 0 60px rgba(6, 182, 212, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5);
+      animation: contentSlideIn 0.25s ease-out;
+    }
+    .project-popup-content-fixed .project-popup-wrapper {
+      width: 100%;
+      max-width: 100%;
+      max-height: none;
+      overflow-y: visible;
+      padding: clamp(20px, 4vw, 32px);
+    }
+    .project-popup-content-fixed .project-title {
+      font-size: clamp(18px, 2.5vw, 24px);
+    }
+    .project-popup-content-fixed .project-badge {
+      font-size: clamp(11px, 1.5vw, 13px);
+      padding: 4px 10px;
+    }
+    .project-popup-content-fixed .project-stat-label {
+      font-size: clamp(11px, 1.5vw, 13px);
+    }
+    .project-popup-content-fixed .project-stat-value {
+      font-size: clamp(14px, 2vw, 16px);
+    }
+    .project-popup-content-fixed .project-metric-header {
+      font-size: clamp(11px, 1.5vw, 13px);
+    }
+    .project-popup-content-fixed .project-metric-value {
+      font-size: clamp(20px, 3vw, 28px);
+    }
+    .project-popup-content-fixed .project-popup-footer {
+      margin-top: clamp(16px, 3vw, 24px);
+      height: 4px;
+    }
+    .project-popup-content-fixed .project-footer-glow {
+      width: 80%;
+      opacity: 0.6;
+      filter: blur(3px);
+    }
+    .project-popup-content-fixed .project-corner-accent {
+      width: clamp(12px, 1.5vw, 16px);
+      height: clamp(12px, 1.5vw, 16px);
+      border-width: 2px;
+    }
+    .project-popup-content-fixed .project-popup-body {
+      padding: clamp(8px, 2vw, 16px) 0;
+    }
+    @media (max-width: 640px) {
+      .project-popup-overlay-fixed {
+        padding: 0;
+      }
+      .project-popup-content-fixed {
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+      }
+      .project-popup-close-btn-fixed {
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+      }
+    }
+    .project-popup-content-fixed::-webkit-scrollbar {
+      width: 8px;
+    }
+    .project-popup-content-fixed::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .project-popup-content-fixed::-webkit-scrollbar-thumb {
+      background: rgba(6, 182, 212, 0.5);
+      border-radius: 4px;
+    }
+    .project-popup-content-fixed::-webkit-scrollbar-thumb:hover {
+      background: rgba(6, 182, 212, 0.7);
+    }
   `
   document.head.appendChild(style)
 }
 
-// Add fade transition and gradient animation
+// Add fade transition
 if (typeof document !== 'undefined' && !document.getElementById('globe-transition-styles')) {
   const styleSheet = document.createElement('style')
   styleSheet.id = 'globe-transition-styles'
@@ -1270,14 +1479,7 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-transitio
     .fade-leave-to {
       opacity: 0;
     }
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    .animate-gradient-shift {
-      background-size: 200% 200%;
-      animation: gradientShift 8s ease infinite;
-    }
+
   `
   document.head.appendChild(styleSheet)
 }
@@ -1304,6 +1506,8 @@ watch(showConnections, () => {
 
 onUnmounted(() => {
   isMounted = false
+  stopAutoRotate()
+  if (interactionTimeout) clearTimeout(interactionTimeout)
   cleanupParticles()
   if (hexGridDebounceTimer) clearTimeout(hexGridDebounceTimer)
   markers.forEach(m => m.remove())

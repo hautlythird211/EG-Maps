@@ -46,8 +46,8 @@ const buttonClasses = computed(() => {
     ghost: 'hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)]',
     link: 'text-[var(--primary)] underline-offset-4 hover:underline',
     // EG-Maps custom variants
-    cyber: 'bg-black/70 border border-cyan-900/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.2)]',
-    'cyber-primary': 'bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:opacity-90 shadow-[0_0_15px_rgba(6,182,212,0.3)]',
+    cyber: 'bg-black/70 border border-white/20 text-white/70 hover:bg-white/10 hover:text-white',
+    'cyber-primary': 'bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-80',
   }
 
   const sizes: Record<string, string> = {
