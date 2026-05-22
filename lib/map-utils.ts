@@ -110,7 +110,11 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
     let thumbUrl = species.imageUrl
     const isLocal = !species.imageUrl.startsWith('http://') && !species.imageUrl.startsWith('https://')
     if (isLocal) {
-      thumbUrl = baseURL && baseURL !== '/' ? baseURL + species.imageUrl.replace(/^\//, '') : species.imageUrl
+      const filename = species.imageUrl.replace(/^\//, '')
+      const basename = filename.split('/').pop() || filename
+      const name = basename.replace(/\.[^.]+$/, '')
+      const prefix = baseURL && baseURL !== '/' ? baseURL : '/'
+      thumbUrl = `${prefix}images/species/thumb/${name}_full.webp`
     } else if (species.imageUrl.includes('commons.wikimedia.org/wiki/Special:FilePath/')) {
       const filename = species.imageUrl.split('/Special:FilePath/')[1]
       if (filename) {

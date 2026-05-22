@@ -1,16 +1,16 @@
 <template>
-  <main class="min-h-[100svh] bg-white pb-[max(7rem,env(safe-area-inset-bottom))] text-black">
-    <section class="mx-auto flex min-h-[100svh] w-[min(100%,78rem)] flex-col justify-center px-[clamp(1rem,4vw,2.5rem)] py-[clamp(5.75rem,10vh,8rem)]">
+  <main class="h-[100svh] overflow-hidden bg-white text-black">
+    <section class="mx-auto flex h-[100svh] w-[min(100%,78rem)] flex-col justify-center px-[clamp(1rem,4vw,2.5rem)] py-[clamp(5.75rem,10vh,8rem)]">
       <div class="grid gap-[clamp(1.75rem,4vw,3.25rem)] lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)] lg:items-end">
         <header class="max-w-[min(100%,38rem)]">
-          <div class="mb-[clamp(1.5rem,4vw,2rem)] flex items-center gap-[clamp(0.75rem,2vw,1rem)]">
+          <div class="mb-[clamp(1.5rem,4vw,2.5rem)] flex items-center gap-[clamp(1rem,3vw,1.5rem)]">
             <img
               :src="`${baseURL}eg-logo.png`"
               alt="Earth Guardians"
-              class="h-[clamp(3rem,8vw,4rem)] w-[clamp(3rem,8vw,4rem)] rounded-full border border-black object-contain"
+              class="h-[clamp(5rem,12vw,7rem)] w-[clamp(5rem,12vw,7rem)] rounded-full object-cover"
               loading="eager"
             />
-            <div class="border-l border-black pl-4">
+            <div>
               <p class="text-xs font-bold uppercase tracking-[0.28em] text-black/60">Earth Guardians</p>
               <p class="mt-1 text-sm font-semibold text-black">Data maps</p>
             </div>

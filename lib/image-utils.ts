@@ -107,6 +107,14 @@ export function getMarkerImageUrl(originalUrl: string, baseURL?: string): string
 
 export function getPopupImageUrl(originalUrl: string, baseURL?: string): string {
   if (!originalUrl) return ''
+  // Full-size WebP at 100% quality for popup images
+  if (!originalUrl.startsWith('http://') && !originalUrl.startsWith('https://')) {
+    const filename = originalUrl.replace(/^\//, '')
+    const basename = filename.split('/').pop() || filename
+    const name = basename.replace(/\.[^.]+$/, '')
+    const prefix = baseURL && baseURL !== '/' ? baseURL : '/'
+    return `${prefix}images/species/thumb/${name}_full.webp`
+  }
   return getThumbnailUrl(originalUrl, POPUP_THUMB_SIZE, baseURL)
 }
 

@@ -32,6 +32,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Type check
+        run: npx vue-tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
       - name: Build static site
         run: pnpm generate
         env:
@@ -39,7 +48,14 @@ jobs:
           NUXT_PUBLIC_MAPTILER_API_KEY: ${{ secrets.NUXT_PUBLIC_MAPTILER_API_KEY }}
 
       - name: Copy 200.html as 404.html for SPA fallback
-        run: cp .output/public/200.html .output/public/404.html 2>/dev/null || cp .output/public/index.html .output/public/404.html 2>/dev/null || true
+        run: |
+          if [ -f .output/public/200.html ]; then
+            cp .output/public/200.html .output/public/404.html
+          elif [ -f .output/public/index.html ]; then
+            cp .output/public/index.html .output/public/404.html
+          else
+            echo "Warning: No 200.html or index.html found for 404 fallback"
+          fi
 
       - uses: actions/upload-pages-artifact@v3
         with:

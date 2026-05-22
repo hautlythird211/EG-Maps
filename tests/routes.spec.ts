@@ -124,11 +124,11 @@ test.describe('Earth Guardians - All Routes and Features', () => {
   });
 
   test.describe('Globe Page (/globe)', () => {
-    test('should load globe page', async ({ page }) => {
-      await waitForPageLoad(page, '/globe');
-      await expect(page).toHaveTitle(/Globe/);
-
-      await expect(page.locator('nav').first()).toBeVisible();
+    test('should redirect from /globe to /project-grants/3d', async ({ page }) => {
+      await page.goto(route('/globe'), { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForURL(/\/project-grants\/3d/, { timeout: 15000 });
+      await expect(page).toHaveURL(/\/project-grants\/3d/);
+      await expect(page).toHaveTitle(/Project Grants.*3D/);
     });
   });
 
@@ -162,7 +162,7 @@ test.describe('Earth Guardians - All Routes and Features', () => {
 
   test.describe('Dark Mode Toggle', () => {
     test('should have dark mode toggle button visible on all pages', async ({ page }) => {
-      const pagesToTest = ['/', '/info', '/globe'];
+      const pagesToTest = ['/', '/info', '/project-grants'];
 
       for (const path of pagesToTest) {
         await waitForPageLoad(page, path);

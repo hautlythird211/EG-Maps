@@ -1,4 +1,5 @@
 import { ref, onMounted } from 'vue'
+import enTranslations from '../locales/en.json'
 
 export type Locale = 'en' | 'es' | 'pt' | 'fr'
 
@@ -11,6 +12,8 @@ const localeState = ref<Locale>('en')
 const localeIds: Locale[] = ['en', 'es', 'pt', 'fr']
 
 const translationCache = new Map<Locale, Translation>()
+const failedLocales = new Set<Locale>()
+translationCache.set('en', enTranslations as Translation)
 
 function detectLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
@@ -26,21 +29,22 @@ function detectLocale(): Locale {
   return 'en'
 }
 
-async function loadLocale(locale: Locale): Promise<Translation> {
+async function loadLocale(locale: Locale, baseURL?: string): Promise<Translation> {
   if (translationCache.has(locale)) {
     return translationCache.get(locale)!
   }
-  const response = await fetch(`/locales/${locale}.json`)
+  if (failedLocales.has(locale)) {
+    throw new Error(`Failed to load locale: ${locale}`)
+  }
+  const prefix = baseURL && baseURL !== '/' ? baseURL.replace(/\/+$/, '') : ''
+  const response = await fetch(`${prefix}/locales/${locale}.json`)
   if (!response.ok) {
+    failedLocales.add(locale)
     throw new Error(`Failed to load locale: ${locale}`)
   }
   const data = await response.json()
   translationCache.set(locale, data)
   return data
-}
-
-if (typeof window !== 'undefined') {
-  loadLocale('en').catch(() => {})
 }
 
 function lookup(locale: Locale, key: string): string | undefined {
@@ -71,17 +75,19 @@ function interpolate(template: string, args: unknown[]): string {
 }
 
 export function useI18n() {
+  const baseURL = useRuntimeConfig().app.baseURL
+
   if (typeof window !== 'undefined' && localeState.value === 'en') {
     const detected = detectLocale()
     if (detected !== 'en') {
       try {
         onMounted(() => {
-          loadLocale(detected).then(() => {
+          loadLocale(detected, baseURL).then(() => {
             localeState.value = detected
           })
         })
       } catch {
-        loadLocale(detected).then(() => {
+        loadLocale(detected, baseURL).then(() => {
           localeState.value = detected
         })
       }
@@ -95,7 +101,7 @@ export function useI18n() {
 
   function setLocale(newLocale: Locale) {
     if (!localeIds.includes(newLocale)) return
-    loadLocale(newLocale).then(() => {
+    loadLocale(newLocale, baseURL).then(() => {
       localeState.value = newLocale
     })
     if (typeof window !== 'undefined') {
