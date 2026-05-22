@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)]' : 'top-20 right-16 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 species-filter-panel transition-all duration-300`"
+    :class="`absolute ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] max-w-full' : 'top-20 right-16 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 species-filter-panel transition-all duration-300`"
     :style="{ zIndex: 'var(--z-map-ui-controls)' }"
   >
     <!-- Header -->
@@ -35,9 +35,9 @@
       </UiButton>
     </div>
 
-    <div v-if="!isCollapsed" :class="isMobile ? 'max-h-[calc(100svh-13rem)] overflow-y-auto pr-1' : 'max-h-[calc(100svh-9rem)] overflow-y-auto pr-1'">
+    <div v-if="!isCollapsed" :class="isMobile ? 'max-h-[calc(100svh-11rem)] overflow-y-auto overflow-x-hidden pr-1 space-y-2' : 'max-h-[calc(100svh-9rem)] overflow-y-auto pr-1'">
     <!-- Search Input with enhanced UX -->
-    <div class="mb-3">
+    <div :class="isMobile ? 'mb-2' : 'mb-3'">
       <div class="relative">
         <iconify-icon icon="lucide:search" class="absolute left-2.5 top-2 h-4 w-4 text-gray-500 pointer-events-none" />
         <input
@@ -58,12 +58,12 @@
     </div>
 
     <!-- Quick Filter Chips (Top 4 taxonomic groups) -->
-    <div class="mb-3 flex flex-wrap gap-1.5" v-if="taxonomicGroups.length > 0">
+    <div :class="isMobile ? 'mb-2 flex flex-wrap gap-1' : 'mb-3 flex flex-wrap gap-1.5'" v-if="taxonomicGroups.length > 0">
       <button
         v-for="(group, index) in taxonomicGroups.slice(0, 4)"
         :key="group"
         @click="toggleTaxonomicGroup(group)"
-        :class="`px-2 py-1 rounded text-[10px] font-medium transition-all duration-200 ${
+        :class="`px-2 py-1 rounded text-[10px] font-medium transition-all duration-200 whitespace-nowrap ${
           selectedTaxonomicGroups.includes(group)
             ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
             : 'bg-black/30 text-gray-400 border border-gray-700/50 hover:border-cyan-700/50 hover:text-cyan-400'
@@ -75,19 +75,19 @@
       <button
         v-if="taxonomicGroups.length > 4"
         @click="showAllGroups = !showAllGroups"
-        class="px-2 py-1 rounded text-[10px] font-medium bg-black/30 text-gray-500 border border-gray-700/50 hover:text-gray-300 transition-colors"
+        class="px-2 py-1 rounded text-[10px] font-medium bg-black/30 text-gray-500 border border-gray-700/50 hover:text-gray-300 transition-colors whitespace-nowrap"
       >
         {{ t('filter.moreGroups', { count: taxonomicGroups.length - 4 }) }}
       </button>
     </div>
 
     <!-- Expandable all groups -->
-    <div v-if="showAllGroups && taxonomicGroups.length > 4" class="mb-3 flex flex-wrap gap-1.5 animate-fade-in">
+    <div v-if="showAllGroups && taxonomicGroups.length > 4" :class="isMobile ? 'mb-2 flex flex-wrap gap-1 animate-fade-in' : 'mb-3 flex flex-wrap gap-1.5 animate-fade-in'">
       <button
         v-for="group in taxonomicGroups.slice(4)"
         :key="group"
         @click="toggleTaxonomicGroup(group)"
-        :class="`px-2 py-1 rounded text-[10px] font-medium transition-all duration-200 ${
+        :class="`px-2 py-1 rounded text-[10px] font-medium transition-all duration-200 whitespace-nowrap ${
           selectedTaxonomicGroups.includes(group)
             ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
             : 'bg-black/30 text-gray-400 border border-gray-700/50 hover:border-cyan-700/50 hover:text-cyan-400'
@@ -98,7 +98,7 @@
     </div>
 
     <!-- Taxonomic Group Filter -->
-    <div class="filter-group mb-2.5">
+    <div :class="isMobile ? 'filter-group mb-2' : 'filter-group mb-2.5'">
       <label class="filter-label block text-[10px] font-heading font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">
         {{ t('filter.taxonomicGroup') }}
       </label>
@@ -113,11 +113,11 @@
           {{ selectedTaxonomicGroups.includes(group) ? t('filter.removeGroup', { group: groupLabel(group) }) : groupLabel(group) }}
         </option>
       </select>
-      <div v-if="selectedTaxonomicGroups.length" class="mt-1.5 flex flex-wrap gap-1.5">
+      <div v-if="selectedTaxonomicGroups.length" :class="isMobile ? 'mt-1.5 flex flex-wrap gap-1' : 'mt-1.5 flex flex-wrap gap-1.5'">
         <button
           v-for="group in selectedTaxonomicGroups"
           :key="`selected-${group}`"
-          class="inline-flex items-center gap-1 rounded border border-cyan-500/40 bg-cyan-500/15 px-1.5 py-0.5 text-[10px] text-cyan-300"
+          class="inline-flex items-center gap-1 rounded border border-cyan-500/40 bg-cyan-500/15 px-1.5 py-0.5 text-[10px] text-cyan-300 whitespace-nowrap"
           @click="toggleTaxonomicGroup(group)"
         >
           {{ groupLabel(group) }}
@@ -127,7 +127,7 @@
     </div>
 
     <!-- Region Filter -->
-    <div class="filter-group mb-2.5">
+    <div :class="isMobile ? 'filter-group mb-2' : 'filter-group mb-2.5'">
       <label class="filter-label block text-[10px] font-heading font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">
         {{ t('filter.region') }}
       </label>
@@ -142,7 +142,7 @@
     </div>
 
     <!-- Ecosystem Filter -->
-    <div class="filter-group mb-2.5">
+    <div :class="isMobile ? 'filter-group mb-2' : 'filter-group mb-2.5'">
       <label class="filter-label block text-[10px] font-heading font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">
         {{ t('filter.ecosystem') }}
       </label>
@@ -157,7 +157,7 @@
     </div>
 
     <!-- Threat Type Filter -->
-    <div class="filter-group mb-3">
+    <div :class="isMobile ? 'filter-group mb-2' : 'filter-group mb-3'">
       <label class="filter-label block text-[10px] font-heading font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">
         {{ t('filter.threatType') }}
       </label>

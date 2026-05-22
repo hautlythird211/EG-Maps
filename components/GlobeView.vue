@@ -86,38 +86,6 @@
       <img src="/white-banner.png" alt="Earth Guardians" class="h-auto w-auto max-h-[15vh] max-w-[180px] -rotate-90 origin-center" loading="lazy" />
     </div>
 
-    <!-- Controls - 2D/3D toggle with enhanced styling -->
-    <div :class="`absolute ${isMobile ? 'top-[5.35rem] left-3' : 'top-4 left-4'} z-[600]`">
-      <div class="map-view-switcher flex items-center gap-0.5">
-        <NuxtLink
-          :to="datasetBaseRoute"
-          :class="[
-            'map-view-tab map-view-tab-idle',
-            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop'
-          ]"
-          :aria-label="t('globe.switchTo2D')"
-        >
-          <span class="relative z-10 flex items-center gap-2">
-            <Icon name="lucide:map" class="h-4 w-4" />
-            {{ t('globe.view2D') }}
-          </span>
-        </NuxtLink>
-        <button
-          :class="[
-            'map-view-tab map-view-tab-active',
-            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop'
-          ]"
-          disabled
-          aria-current="page"
-        >
-          <span class="relative z-10 flex items-center gap-2">
-            <Icon name="lucide:globe" class="h-4 w-4" />
-            {{ t('globe.view3D') }}
-          </span>
-        </button>
-      </div>
-    </div>
-
     <!-- Global Stats (only shown for project grants) -->
     <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-0 z-[1000] w-full max-w-xl px-4 sm:px-0">
       <GlobalStats :projects="projectsData" @close="() => {}" />
@@ -168,6 +136,12 @@
         </button>
       </div>
     </Transition>
+
+    <!-- Detached fullscreen species popup overlay -->
+    <div v-if="showSpeciesOverlay" class="species-popup-overlay-fixed" @click.self="closeSpeciesOverlay">
+      <button class="species-popup-close-btn-fixed" @click="closeSpeciesOverlay">&times;</button>
+      <div class="species-popup-content-fixed" v-html="speciesOverlayHTML"></div>
+    </div>
   </div>
 </template>
 
@@ -188,8 +162,34 @@ import {
   type MapConnectionFeature,
   type MapParticleSystem,
 } from '@/lib/map-effects'
+import {
+  getMarkerImageUrl,
+  preloadSpeciesImages,
+  clearImageCache,
+} from '@/lib/image-utils'
 
 const { t, locale } = useI18n()
+
+function getLocalizedSpecies(species: Species): Species {
+  const content = species.content?.[locale.value] ?? species.content?.en
+  if (!content) return species
+
+  return {
+    ...species,
+    description: content.description ?? species.description,
+    endangerment: content.endangerment ?? species.endangerment,
+    ecosystemNeeds: content.ecosystemNeeds ?? species.ecosystemNeeds,
+    actions: content.actions ?? species.actions,
+    region: content.region ?? species.region,
+  }
+}
+
+function getTaxonomicGroupLabels() {
+  return Object.keys(GROUP_COLORS).reduce<Record<string, string>>((labels, group) => {
+    labels[group] = t(`taxonomy.${group}`)
+    return labels
+  }, {})
+}
 
 interface Props {
   projects?: ProjectData[]
@@ -218,6 +218,8 @@ const isLoading = ref(true)
 const activeDataset = ref<'project-grants' | 'endangered-species'>(props.defaultDataset)
 const isHexGridVisible = ref(props.showHexGrid)
 const showConnections = ref(true)
+const showSpeciesOverlay = ref(false)
+const speciesOverlayHTML = ref('')
 
 let map: maplibregl.Map | null = null
 let markers: maplibregl.Marker[] = []
@@ -225,6 +227,26 @@ let isMounted = true
 let pendingVisibilityUpdate = false
 let connectionFeatures: MapConnectionFeature[] = []
 let particleSystem: MapParticleSystem | null = null
+
+function openSpeciesOverlay(species: Species) {
+  const localizedSpecies = getLocalizedSpecies(species)
+  const speciesPopupTranslations = {
+    scientificName: t('species.scientificName'),
+    threatTypes: t('species.threatTypes'),
+    population: t('species.population'),
+    habitat: t('species.habitat'),
+    region: t('filter.region'),
+    ecosystem: t('filter.ecosystem'),
+    groupLabels: getTaxonomicGroupLabels()
+  }
+  speciesOverlayHTML.value = buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations)
+  showSpeciesOverlay.value = true
+}
+
+function closeSpeciesOverlay() {
+  showSpeciesOverlay.value = false
+  speciesOverlayHTML.value = ''
+}
 
 const MAPTILER_API_KEY = useRuntimeConfig().public.maptilerApiKey || ''
 
@@ -340,77 +362,108 @@ async function initMap() {
   }
 }
 
-function createProjectMarkerElement(project: ProjectData): HTMLElement {
-  const beneficiaryFactor = Math.min(Math.max(project.indirect_beneficiaries / 10000, 0.5), 5)
-  const markerSize = (15 + beneficiaryFactor * 10) * (isMobile.value ? 0.7 : 1)
-  const color = getProjectColorByBeneficiaries(project.direct_beneficiaries, project.indirect_beneficiaries)
+function getUnifiedMarkerMetrics(options: {
+  color: string
+  size: number
+  centerScale?: number
+  imageUrl?: string
+  originalImageUrl?: string
+}) {
+  const hitSize = Math.max(34, Math.round(options.size + 12))
+  const visualSize = Math.round(options.size)
 
+  return {
+    hitSize,
+    visualSize,
+    color: options.color,
+    centerSize: Math.max(7, Math.round(visualSize * (options.centerScale ?? 0.42))),
+    imageUrl: options.imageUrl,
+    originalImageUrl: options.originalImageUrl,
+  }
+}
+
+function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerMetrics>) {
   const el = document.createElement('div')
   el.className = 'globe-marker-item'
-  el.style.width = `${markerSize}px`
-  el.style.height = `${markerSize}px`
+  el.style.width = `${metrics.hitSize}px`
+  el.style.height = `${metrics.hitSize}px`
   el.style.display = 'flex'
   el.style.justifyContent = 'center'
   el.style.alignItems = 'center'
   el.style.cursor = 'pointer'
-  // Inner black circle with white border (matching original site style)
-  const innerWrapper = document.createElement('div')
-  innerWrapper.style.width = '100%'
-  innerWrapper.style.height = '100%'
-  innerWrapper.style.borderRadius = '50%'
-  innerWrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
-  innerWrapper.style.border = '2px solid rgba(255, 255, 255, 0.8)'
-  innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 7.5}px ${color}, 0 0 1.5px #fff`
-  innerWrapper.style.display = 'flex'
-  innerWrapper.style.justifyContent = 'center'
-  innerWrapper.style.alignItems = 'center'
-  innerWrapper.style.position = 'relative'
-  el.appendChild(innerWrapper)
+  el.style.pointerEvents = 'auto'
+  el.style.zIndex = '10'
 
-  // Colored center dot
-  const centerDot = document.createElement('div')
-  centerDot.style.width = `${markerSize * 0.45}px`
-  centerDot.style.height = `${markerSize * 0.45}px`
-  centerDot.style.backgroundColor = color
-  centerDot.style.borderRadius = '50%'
-  centerDot.style.boxShadow = `0 0 ${beneficiaryFactor * 2}px ${color}`
-  innerWrapper.appendChild(centerDot)
+  const inner = document.createElement('div')
+  inner.style.width = `${metrics.visualSize}px`
+  inner.style.height = `${metrics.visualSize}px`
+  inner.style.borderRadius = '50%'
+  inner.style.backgroundColor = 'rgba(0, 0, 0, 0.82)'
+  inner.style.border = '2px solid rgba(255, 255, 255, 0.86)'
+  inner.style.boxShadow = `0 0 ${Math.max(8, metrics.visualSize * 0.5)}px ${metrics.color}, 0 0 1.5px #fff`
+  inner.style.display = 'flex'
+  inner.style.justifyContent = 'center'
+  inner.style.alignItems = 'center'
+  inner.style.position = 'relative'
+  inner.style.overflow = 'hidden'
+  inner.style.transition = 'transform 160ms ease, box-shadow 160ms ease'
+  inner.style.transformOrigin = 'center center'
+  inner.style.transform = 'scale(1)'
+
+  if (metrics.originalImageUrl) {
+    const thumbUrl = getMarkerImageUrl(metrics.originalImageUrl)
+    if (thumbUrl) {
+      inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${thumbUrl}")`
+      inner.style.backgroundSize = 'cover'
+      inner.style.backgroundPosition = 'center'
+    }
+  } else if (metrics.imageUrl) {
+    inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${metrics.imageUrl}")`
+    inner.style.backgroundSize = 'cover'
+    inner.style.backgroundPosition = 'center'
+  } else {
+    const centerDot = document.createElement('div')
+    centerDot.style.width = `${metrics.centerSize}px`
+    centerDot.style.height = `${metrics.centerSize}px`
+    centerDot.style.backgroundColor = metrics.color
+    centerDot.style.borderRadius = '50%'
+    centerDot.style.boxShadow = `0 0 ${Math.max(3, metrics.centerSize * 0.5)}px ${metrics.color}`
+    inner.appendChild(centerDot)
+  }
+
+  el.appendChild(inner)
 
   el.addEventListener('mouseenter', () => {
-    innerWrapper.style.transform = 'scale(1.25)'
-    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 25}px ${color}, 0 0 5px #fff`
+    inner.style.transform = 'scale(1.28)'
+    inner.style.boxShadow = `0 0 ${Math.max(16, metrics.visualSize * 0.9)}px ${metrics.color}, 0 0 4px #fff`
+    el.style.zIndex = '100'
   })
+
   el.addEventListener('mouseleave', () => {
-    innerWrapper.style.transform = 'scale(1)'
-    innerWrapper.style.boxShadow = `0 0 ${beneficiaryFactor * 7.5}px ${color}, 0 0 1.5px #fff`
+    inner.style.transform = 'scale(1)'
+    inner.style.boxShadow = `0 0 ${Math.max(8, metrics.visualSize * 0.5)}px ${metrics.color}, 0 0 1.5px #fff`
+    el.style.zIndex = '10'
   })
 
   return el
 }
 
+function createProjectMarkerElement(project: ProjectData): HTMLElement {
+  const beneficiaryFactor = Math.min(Math.max(project.indirect_beneficiaries / 10000, 0.5), 5)
+  const markerSize = 15 + beneficiaryFactor * 10
+  const color = getProjectColorByBeneficiaries(project.direct_beneficiaries, project.indirect_beneficiaries)
+
+  return createUnifiedMarkerElement(getUnifiedMarkerMetrics({ color, size: markerSize }))
+}
+
 function createSpeciesMarkerElement(species: Species): HTMLElement {
   const color = GROUP_COLORS[species.taxonomicGroup] ?? '#B64030'
-  const markerSize = 12 * (isMobile.value ? 0.7 : 1)
-
-  const el = document.createElement('div')
-  el.className = 'globe-marker-item'
-  el.style.width = `${markerSize}px`
-  el.style.height = `${markerSize}px`
-  el.style.borderRadius = '50%'
-  el.style.backgroundColor = color
-  el.style.border = '2px solid rgba(255, 255, 255, 0.8)'
-  el.style.boxShadow = `0 0 8px ${color}, 0 0 1.5px #fff`
-  el.style.cursor = 'pointer'
-  el.style.opacity = '0.9'
-
-  el.addEventListener('mouseenter', () => {
-    el.style.transform = 'scale(1.4)'
-  })
-  el.addEventListener('mouseleave', () => {
-    el.style.transform = 'scale(1)'
-  })
-
-  return el
+  return createUnifiedMarkerElement(getUnifiedMarkerMetrics({
+    color,
+    size: species.imageUrl ? 26 : 20,
+    centerScale: 0.62,
+    originalImageUrl: species.imageUrl || undefined,
+  }))
 }
 
 function updateMarkerVisibility() {
@@ -481,7 +534,8 @@ function rebuildMarkers() {
     population: t('species.population'),
     habitat: t('species.habitat'),
     region: t('filter.region'),
-    ecosystem: t('filter.ecosystem')
+    ecosystem: t('filter.ecosystem'),
+    groupLabels: getTaxonomicGroupLabels()
   }
 
   if (activeDataset.value === 'project-grants') {
@@ -513,21 +567,20 @@ function rebuildMarkers() {
       ? speciesData.value.slice(0, 80)
       : speciesData.value
 
-    data.forEach((species) => {
-      if (!isValidCoordinate(species.lat, species.lng)) return
+    const speciesToRender = data.filter(s => isValidCoordinate(s.lat, s.lng))
+    const imageUrls = speciesToRender.map(s => s.imageUrl).filter(Boolean)
+    
+    preloadSpeciesImages(imageUrls, true)
 
+    speciesToRender.forEach((species) => {
       const el = createSpeciesMarkerElement(species)
-      const popup = new maplibregl.Popup({
-        closeButton: true,
-        closeOnClick: true,
-        maxWidth: '340px',
-        className: 'cyberpunk-popup',
-        offset: 10,
-      }).setHTML(buildSpeciesPopupHTML(species, speciesPopupTranslations))
+      el.style.cursor = 'pointer'
+      el.addEventListener('click', () => {
+        openSpeciesOverlay(species)
+      })
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([species.lng, species.lat])
-        .setPopup(popup)
         .addTo(map!)
 
       markers.push(marker)
@@ -1055,6 +1108,151 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
       height: 2px;
       opacity: 0.6;
     }
+    /* Fullscreen detached species popup overlay */
+    .species-popup-overlay-fixed {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: overlayFadeIn 0.2s ease-out;
+    }
+    @keyframes overlayFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .species-popup-close-btn-fixed {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 2147483647;
+      width: 44px;
+      height: 44px;
+      border: 2px solid rgba(6, 182, 212, 0.5);
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.7);
+      color: #06b6d4;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+    .species-popup-close-btn-fixed:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: #06b6d4;
+      transform: scale(1.1);
+    }
+    .species-popup-content-fixed {
+      width: 100%;
+      max-width: min(700px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      border-radius: 16px;
+      background: rgba(10, 10, 15, 0.95);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      box-shadow: 0 0 60px rgba(6, 182, 212, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5);
+      animation: contentSlideIn 0.25s ease-out;
+    }
+    @keyframes contentSlideIn {
+      from { opacity: 0; transform: scale(0.95) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .species-popup-content-fixed .species-popup-wrapper {
+      width: 100%;
+      max-width: 100%;
+      max-height: none;
+      padding: 0;
+    }
+    .species-popup-content-fixed .species-image-frame {
+      height: clamp(180px, 30vh, 320px);
+      width: 100%;
+      border-radius: 16px 16px 0 0;
+      border-bottom: 2px solid;
+    }
+    .species-popup-content-fixed .species-header {
+      padding: clamp(16px, 3vw, 24px);
+    }
+    .species-popup-content-fixed .species-common-name {
+      font-size: clamp(20px, 3vw, 28px);
+    }
+    .species-popup-content-fixed .species-scientific-name {
+      font-size: clamp(14px, 2vw, 18px);
+    }
+    .species-popup-content-fixed .species-body {
+      padding: clamp(16px, 3vw, 24px);
+    }
+    .species-popup-content-fixed .species-description {
+      font-size: clamp(14px, 2vw, 16px);
+      line-height: 1.7;
+      max-height: none;
+      overflow: visible;
+    }
+    .species-popup-content-fixed .species-detail-row {
+      gap: 12px;
+    }
+    .species-popup-content-fixed .species-detail-icon {
+      width: 20px;
+      height: 20px;
+    }
+    .species-popup-content-fixed .species-detail-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+    .species-popup-content-fixed .species-detail-label {
+      font-size: clamp(11px, 1.5vw, 13px);
+    }
+    .species-popup-content-fixed .species-detail-value {
+      font-size: clamp(13px, 2vw, 15px);
+    }
+    .species-popup-content-fixed .species-threat-tag {
+      font-size: clamp(11px, 1.5vw, 13px);
+      padding: 4px 8px;
+    }
+    @media (max-width: 640px) {
+      .species-popup-overlay-fixed {
+        padding: 0;
+      }
+      .species-popup-content-fixed {
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+      }
+      .species-popup-content-fixed .species-image-frame {
+        height: 220px;
+        border-radius: 0;
+      }
+      .species-popup-close-btn-fixed {
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+      }
+    }
+    .species-popup-content-fixed::-webkit-scrollbar {
+      width: 8px;
+    }
+    .species-popup-content-fixed::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .species-popup-content-fixed::-webkit-scrollbar-thumb {
+      background: rgba(6, 182, 212, 0.5);
+      border-radius: 4px;
+    }
+    .species-popup-content-fixed::-webkit-scrollbar-thumb:hover {
+      background: rgba(6, 182, 212, 0.7);
+    }
   `
   document.head.appendChild(style)
 }
@@ -1109,6 +1307,7 @@ onUnmounted(() => {
   cleanupParticles()
   if (hexGridDebounceTimer) clearTimeout(hexGridDebounceTimer)
   markers.forEach(m => m.remove())
+  clearImageCache()
   if (map) {
     map.remove()
     map = null

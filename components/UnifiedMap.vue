@@ -79,39 +79,6 @@
     <!-- Map Container -->
     <div ref="mapContainerRef" class="absolute inset-0 w-full h-full" />
 
-    <!-- Controls - 2D/3D toggle with enhanced styling -->
-    <div :class="`absolute ${isMobile ? 'top-[5.35rem] left-3' : 'top-4 left-4'}`" :style="{ zIndex: 'var(--z-map-ui-controls)' }">
-      <div class="map-view-switcher flex items-center gap-0.5">
-        <button
-          :class="[
-            'map-view-tab',
-            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop',
-            is2DActive ? 'map-view-tab-active' : 'map-view-tab-idle'
-          ]"
-          aria-current="page"
-          @click="setView('2d')"
-        >
-          <span class="relative z-10 flex items-center gap-2">
-            <iconify-icon icon="lucide:map" class="h-4 w-4" />
-            {{ t('globe.view2D') }}
-          </span>
-        </button>
-        <NuxtLink
-          :to="`${datasetBaseRoute}/3d`"
-          :class="[
-            'map-view-tab map-view-tab-idle',
-            isMobile ? 'map-view-tab-mobile' : 'map-view-tab-desktop'
-          ]"
-          :aria-label="t('globe.switchTo3D')"
-        >
-          <span class="relative z-10 flex items-center gap-2">
-            <iconify-icon icon="lucide:globe" class="h-4 w-4" />
-            {{ t('globe.view3D') }}
-          </span>
-        </NuxtLink>
-      </div>
-    </div>
-
     <!-- Global Stats (for project grants only) -->
     <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-24 w-full max-w-xl px-3 sm:bottom-4 sm:px-4 lg:px-0" :style="{ zIndex: 'var(--z-map-global-stats)' }">
       <GlobalStats :projects="visibleProjects" @close="() => {}" />
@@ -179,7 +146,6 @@
           <div class="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-orange-600 animate-pulse" />
           <iconify-icon icon="lucide:alert-triangle" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-white" />
         </div>
-        <h2 class="text-xl font-bold mb-2">{{ t('globe.unableToLoad') }}</h2>
         <p class="text-gray-400 mb-4 text-center px-4 max-w-md">{{ t('globe.connectionError') }}</p>
         <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-lg text-white font-medium hover:opacity-90 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] flex items-center gap-2">
           <iconify-icon icon="lucide:refresh-cw" class="h-4 w-4" />
@@ -187,6 +153,12 @@
         </button>
       </div>
     </Transition>
+
+    <!-- Detached fullscreen species popup overlay -->
+    <div v-if="showSpeciesOverlay" class="species-popup-overlay-fixed" @click.self="closeSpeciesOverlay">
+      <button class="species-popup-close-btn-fixed" @click="closeSpeciesOverlay">&times;</button>
+      <div class="species-popup-content-fixed" v-html="speciesOverlayHTML"></div>
+    </div>
   </div>
 </template>
 
@@ -207,6 +179,13 @@ import {
   type MapConnectionFeature,
   type MapParticleSystem,
 } from '@/lib/map-effects'
+import {
+  getMarkerImageUrl,
+  setupLazyMarkerImage,
+  cleanupLazyMarkerImage,
+  preloadSpeciesImages,
+  clearImageCache,
+} from '@/lib/image-utils'
 
 const { t, locale } = useI18n()
 
@@ -268,13 +247,34 @@ const showFilterPanel = ref(false)
 const activeDataset = ref<'project-grants' | 'endangered-species'>(props.defaultDataset)
 const hasError = ref(false)
 const isLoading = ref(true)
-const is2DActive = ref(true)
+const showSpeciesOverlay = ref(false)
+const speciesOverlayHTML = ref('')
 
 let map: maplibregl.Map | null = null
 let markers: maplibregl.Marker[] = []
 let pendingVisibilityUpdate = false
 let connectionFeatures: MapConnectionFeature[] = []
 let particleSystem: MapParticleSystem | null = null
+
+function openSpeciesOverlay(species: Species) {
+  const localizedSpecies = getLocalizedSpecies(species)
+  const speciesPopupTranslations = {
+    scientificName: t('species.scientificName'),
+    threatTypes: t('species.threatTypes'),
+    population: t('species.population'),
+    habitat: t('species.habitat'),
+    region: t('filter.region'),
+    ecosystem: t('filter.ecosystem'),
+    groupLabels: getTaxonomicGroupLabels()
+  }
+  speciesOverlayHTML.value = buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations)
+  showSpeciesOverlay.value = true
+}
+
+function closeSpeciesOverlay() {
+  showSpeciesOverlay.value = false
+  speciesOverlayHTML.value = ''
+}
 
 function taxonomicGroupLabel(group: string) {
   return t(`taxonomy.${group}`)
@@ -411,10 +411,6 @@ function keepPopupFullyVisible(popup: maplibregl.Popup) {
   window.setTimeout(fit, 260)
 }
 
-function setView(view: '2d' | '3d') {
-  is2DActive.value = view === '2d'
-}
-
 function handleFilterChange(filtered: Species[]) {
   filteredSpeciesList.value = filtered
   rebuildMarkers()
@@ -444,6 +440,7 @@ function getUnifiedMarkerMetrics(options: {
   size: number
   centerScale?: number
   imageUrl?: string
+  originalImageUrl?: string
 }) {
   const hitSize = Math.max(34, Math.round(options.size + 12))
   const visualSize = Math.round(options.size)
@@ -454,6 +451,7 @@ function getUnifiedMarkerMetrics(options: {
     color: options.color,
     centerSize: Math.max(7, Math.round(visualSize * (options.centerScale ?? 0.42))),
     imageUrl: options.imageUrl,
+    originalImageUrl: options.originalImageUrl,
   }
 }
 
@@ -467,8 +465,6 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   el.style.cursor = 'pointer'
   el.style.pointerEvents = 'auto'
   el.style.zIndex = '10'
-  // Ensure marker stays within map container
-  el.style.position = 'relative'
 
   const inner = document.createElement('div')
   inner.style.width = `${metrics.visualSize}px`
@@ -483,11 +479,17 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   inner.style.position = 'relative'
   inner.style.overflow = 'hidden'
   inner.style.transition = 'transform 160ms ease, box-shadow 160ms ease, width 160ms ease, height 160ms ease'
-  // Use transform-origin center and avoid translateZ which causes positioning issues
   inner.style.transformOrigin = 'center center'
   inner.style.transform = 'scale(1)'
 
-  if (metrics.imageUrl) {
+  if (metrics.originalImageUrl) {
+    const thumbUrl = getMarkerImageUrl(metrics.originalImageUrl)
+    if (thumbUrl) {
+      inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${thumbUrl}")`
+      inner.style.backgroundSize = 'cover'
+      inner.style.backgroundPosition = 'center'
+    }
+  } else if (metrics.imageUrl) {
     inner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.18)), url("${metrics.imageUrl}")`
     inner.style.backgroundSize = 'cover'
     inner.style.backgroundPosition = 'center'
@@ -533,7 +535,7 @@ function createSpeciesMarkerElement(species: Species): HTMLElement {
     color,
     size: species.imageUrl ? 26 : 20,
     centerScale: 0.62,
-    imageUrl: species.imageUrl,
+    originalImageUrl: species.imageUrl || undefined,
   }))
 }
 
@@ -578,7 +580,7 @@ function rebuildMarkers() {
         })
       })
 
-      const marker = new maplibregl.Marker({ element: el })
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([project.longitude, project.latitude])
         .setPopup(popup)
         .addTo(map!)
@@ -586,25 +588,20 @@ function rebuildMarkers() {
       markers.push(marker)
     })
   } else if (activeDataset.value === 'endangered-species') {
-    visibleSpecies.value.forEach((species) => {
-      if (!isValidCoordinate(species.lat, species.lng)) return
+    const speciesToRender = visibleSpecies.value.filter(s => isValidCoordinate(s.lat, s.lng))
+    const imageUrls = speciesToRender.map(s => s.imageUrl).filter(Boolean)
+    
+    preloadSpeciesImages(imageUrls, true)
 
+    speciesToRender.forEach((species) => {
       const el = createSpeciesMarkerElement(species)
-      const localizedSpecies = getLocalizedSpecies(species)
-
-      const popup = createPopup('min(560px, calc(100vw - 32px))')
-        .setHTML(buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations))
-
-      popup.on('open', () => {
-        requestAnimationFrame(() => {
-          keepPopupFullyVisible(popup)
-          fitPopupToScreen(popup)
-        })
+      el.style.cursor = 'pointer'
+      el.addEventListener('click', () => {
+        openSpeciesOverlay(species)
       })
 
-      const marker = new maplibregl.Marker({ element: el })
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([species.lng, species.lat])
-        .setPopup(popup)
         .addTo(map!)
 
       markers.push(marker)
@@ -887,6 +884,7 @@ onUnmounted(() => {
   cleanupParticles()
   markers.forEach(m => m.remove())
   markers = []
+  clearImageCache()
   if (map) {
     map.remove()
     map = null
@@ -944,6 +942,10 @@ onUnmounted(() => {
 .maplibregl-marker {
   pointer-events: auto;
   z-index: 10;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  will-change: transform;
 }
 
 .maplibregl-popup-tip {
@@ -1327,5 +1329,188 @@ onUnmounted(() => {
 .project-popup-wrapper::-webkit-scrollbar-thumb:hover,
 .species-popup-wrapper::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.6);
+}
+
+/* Fullscreen detached species popup overlay */
+.species-popup-overlay-fixed {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.species-popup-close-btn-fixed {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(6, 182, 212, 0.5);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: #06b6d4;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+.species-popup-close-btn-fixed:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: #06b6d4;
+  transform: scale(1.1);
+}
+
+.species-popup-content-fixed {
+  width: 100%;
+  max-width: min(700px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 16px;
+  background: rgba(10, 10, 15, 0.95);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 60px rgba(6, 182, 212, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5);
+  animation: contentSlideIn 0.25s ease-out;
+}
+
+@keyframes contentSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.species-popup-content-fixed .species-popup-wrapper {
+  width: 100%;
+  max-width: 100%;
+  max-height: none;
+  padding: 0;
+}
+
+.species-popup-content-fixed .species-image-frame {
+  height: clamp(180px, 30vh, 320px);
+  width: 100%;
+  border-radius: 16px 16px 0 0;
+  border-bottom: 2px solid;
+}
+
+.species-popup-content-fixed .species-header {
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.species-popup-content-fixed .species-common-name {
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+.species-popup-content-fixed .species-scientific-name {
+  font-size: clamp(14px, 2vw, 18px);
+}
+
+.species-popup-content-fixed .species-body {
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.species-popup-content-fixed .species-description {
+  font-size: clamp(14px, 2vw, 16px);
+  line-height: 1.7;
+  max-height: none;
+  overflow: visible;
+}
+
+.species-popup-content-fixed .species-detail-row {
+  gap: 12px;
+}
+
+.species-popup-content-fixed .species-detail-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.species-popup-content-fixed .species-detail-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.species-popup-content-fixed .species-detail-label {
+  font-size: clamp(11px, 1.5vw, 13px);
+}
+
+.species-popup-content-fixed .species-detail-value {
+  font-size: clamp(13px, 2vw, 15px);
+}
+
+.species-popup-content-fixed .species-threat-tag {
+  font-size: clamp(11px, 1.5vw, 13px);
+  padding: 4px 8px;
+}
+
+@media (max-width: 640px) {
+  .species-popup-overlay-fixed {
+    padding: 0;
+  }
+
+  .species-popup-content-fixed {
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .species-popup-content-fixed .species-image-frame {
+    height: 220px;
+    border-radius: 0;
+  }
+
+  .species-popup-close-btn-fixed {
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+}
+
+/* Custom scrollbar for fullscreen popup */
+.species-popup-content-fixed::-webkit-scrollbar {
+  width: 8px;
+}
+
+.species-popup-content-fixed::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.species-popup-content-fixed::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.5);
+  border-radius: 4px;
+}
+
+.species-popup-content-fixed::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.7);
 }
 </style>

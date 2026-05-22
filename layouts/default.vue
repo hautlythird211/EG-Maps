@@ -2,27 +2,69 @@
   <div class="min-h-[100svh] bg-[var(--bg-secondary)]">
     <slot />
 
-    <!-- Top utility header -->
-    <header class="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[5.35rem] sm:top-[max(5rem,env(safe-area-inset-top))] z-[10000] max-w-[calc(100vw-1.5rem)] sm:right-[max(1rem,env(safe-area-inset-right))]">
-      <div :class="headerShellClass">
-        <NuxtLink
-          v-for="item in headerItems"
-          :key="item.path"
-          :to="item.path"
-          :class="getHeaderItemClass(item.path)"
-        >
-          <Icon :name="item.icon" class="h-4 w-4" />
-          <span class="hidden sm:inline">{{ t(item.labelKey) }}</span>
-        </NuxtLink>
-        <a
-          href="https://www.earthguardians.org/crews"
-          target="_blank"
-          rel="noopener noreferrer"
-          :class="headerUtilityClass"
-        >
-          <Icon name="lucide:users" class="h-4 w-4" />
-          <span class="hidden sm:inline">{{ t('nav.crews') }}</span>
-        </a>
+    <!-- Unified Top Header - 2D/3D + Utilities + Theme -->
+    <header v-if="showUnifiedHeader" class="fixed left-1/2 top-[1.25rem] z-[10000] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 sm:left-auto sm:right-[max(2rem,env(safe-area-inset-right))] sm:top-[0.5rem] sm:translate-x-0">
+      <div :class="unifiedHeaderShellClass">
+        <!-- Left: 2D/3D Toggle -->
+        <div v-if="showViewToggle" class="map-view-switcher flex items-center gap-0.5">
+          <NuxtLink
+            :to="view2DRoute"
+            :class="[
+              'map-view-tab map-view-tab-sm',
+              !is3DRoute ? 'map-view-tab-active' : 'map-view-tab-idle'
+            ]"
+          >
+            <Icon name="lucide:map" class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline text-xs">{{ t('globe.view2D') }}</span>
+          </NuxtLink>
+          <NuxtLink
+            :to="view3DRoute"
+            :class="[
+              'map-view-tab map-view-tab-sm',
+              is3DRoute ? 'map-view-tab-active' : 'map-view-tab-idle'
+            ]"
+          >
+            <Icon name="lucide:globe" class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline text-xs">{{ t('globe.view3D') }}</span>
+          </NuxtLink>
+        </div>
+
+        <!-- Separator -->
+        <div v-if="showViewToggle" :class="headerSeparatorClass" />
+
+        <!-- Right: Navigation + Theme -->
+        <div class="flex items-center gap-0.5">
+          <NuxtLink
+            v-for="item in headerItems"
+            :key="item.path"
+            :to="item.path"
+            :class="getHeaderItemClass(item.path)"
+          >
+            <Icon :name="item.icon" class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline text-xs">{{ t(item.labelKey) }}</span>
+          </NuxtLink>
+          <a
+            href="https://www.earthguardians.org/crews"
+            target="_blank"
+            rel="noopener noreferrer"
+            :class="headerUtilityClass"
+          >
+            <Icon name="lucide:users" class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline text-xs">{{ t('nav.crews') }}</span>
+          </a>
+
+          <!-- Separator -->
+          <div :class="headerSeparatorClass" />
+
+          <!-- Theme toggle -->
+          <button
+            @click="toggleDarkMode"
+            :class="headerUtilityClass"
+            :aria-label="isDark ? t('nav.switchToLight') : t('nav.switchToDark')"
+          >
+            <Icon :name="isDark ? 'lucide:sun' : 'lucide:moon'" class="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </header>
 
@@ -143,30 +185,6 @@
               </div>
             </Transition>
           </div>
-
-          <!-- Dark mode toggle -->
-          <button
-            @click="toggleDarkMode"
-            class="group relative flex flex-col items-center"
-            :ref="el => { if (el && el.nodeType === 1) dockItemRefs.set(navItems.length + 1, el); else dockItemRefs.delete(navItems.length + 1) }"
-            @mouseenter="onDockHover(navItems.length + 1)"
-            @mouseleave="onDockLeave()"
-          >
-            <!-- Tooltip -->
-            <div
-              :class="[tooltipClass, { 'opacity-100': hoveredIndex === navItems.length + 1 }]"
-            >
-              {{ isDark ? t('nav.switchToLight') : t('nav.switchToDark') }}
-              <div :class="tooltipArrowClass" />
-            </div>
-
-            <div
-              :class="utilityIconClass"
-              :style="getItemStyle(navItems.length + 1)"
-            >
-              <Icon :name="isDark ? 'lucide:sun' : 'lucide:moon'" class="transition-all duration-150" :class="getItemIconClass(navItems.length + 1)" />
-            </div>
-          </button>
         </div>
       </div>
     </nav>
@@ -201,37 +219,57 @@ const headerItems: NavItem[] = [
 
 const { isDark, toggle: toggleDarkMode } = useDarkMode()
 
-const isHighContrastRoute = computed(() => route.path === '/' || route.path === '/info')
-const dockShellClass = computed(() => [
-  'max-w-full px-2 py-2 rounded-2xl border shadow-xl backdrop-blur-xl transition-colors duration-200',
-  isHighContrastRoute.value
-    ? 'bg-white/95 border-black text-black shadow-[0_12px_32px_rgba(0,0,0,0.18)]'
-    : 'panel-floating',
-])
-const headerShellClass = computed(() => [
-  'flex max-w-full items-center gap-1 overflow-hidden rounded-xl border px-1.5 py-1.5 shadow-xl backdrop-blur-xl',
-  isHighContrastRoute.value
+const isMapRoute = computed(() =>
+  route.path.startsWith('/project-grants') || route.path.startsWith('/endangered-species')
+)
+const is3DRoute = computed(() => route.path.endsWith('/3d'))
+const showUnifiedHeader = computed(() => isMapRoute.value || route.path === '/info')
+const showViewToggle = computed(() => isMapRoute.value)
+
+const view2DRoute = computed(() => {
+  const base = route.path.endsWith('/3d') ? route.path.replace('/3d', '') : route.path
+  return base
+})
+const view3DRoute = computed(() => {
+  const base = route.path.endsWith('/3d') ? route.path : `${route.path}/3d`
+  return base
+})
+
+const isLightTheme = computed(() => !isDark.value)
+const unifiedHeaderShellClass = computed(() => [
+  'flex max-w-full items-center gap-1 overflow-hidden rounded-lg border px-1 py-1 shadow-xl backdrop-blur-xl',
+  isLightTheme.value
     ? 'bg-white/95 border-black text-black shadow-[0_12px_32px_rgba(0,0,0,0.18)]'
     : 'bg-black/80 border-cyan-900/40 text-cyan-100 shadow-[0_0_18px_rgba(6,182,212,0.16)]',
 ])
+const headerSeparatorClass = computed(() => [
+  'mx-0.5 h-5 w-px self-center',
+  isLightTheme.value ? 'bg-black/30' : 'bg-cyan-900/40',
+])
+const dockShellClass = computed(() => [
+  'max-w-full px-2 py-2 rounded-2xl border shadow-xl backdrop-blur-xl transition-colors duration-200',
+  isLightTheme.value
+    ? 'bg-white/95 border-black text-black shadow-[0_12px_32px_rgba(0,0,0,0.18)]'
+    : 'panel-floating',
+])
 const headerUtilityClass = computed(() => [
-  'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors',
-  isHighContrastRoute.value
+  'inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors',
+  isLightTheme.value
     ? 'text-black hover:bg-black hover:text-white'
     : 'text-cyan-200 hover:bg-cyan-500/15 hover:text-white',
 ])
 const tooltipClass = computed(() => [
   'absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 text-xs font-medium rounded-lg opacity-0 transition-all duration-150 pointer-events-none shadow-lg whitespace-nowrap',
-  isHighContrastRoute.value
+  isLightTheme.value
     ? 'text-white bg-black border border-black'
     : 'text-white bg-gray-900/95 backdrop-blur border border-white/10',
 ])
 const tooltipArrowClass = computed(() => [
   'absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent',
-  isHighContrastRoute.value ? 'border-t-black' : 'border-t-gray-900/95',
+  isLightTheme.value ? 'border-t-black' : 'border-t-gray-900/95',
 ])
 const inactiveIconClass = computed(() =>
-  isHighContrastRoute.value
+  isLightTheme.value
     ? 'bg-white text-black border border-black hover:bg-black hover:text-white'
     : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--border-color)] hover:text-[var(--text-primary)]'
 )
@@ -241,11 +279,11 @@ const utilityIconClass = computed(() => [
 ])
 const separatorClass = computed(() => [
   'mx-1 h-8 w-px self-center',
-  isHighContrastRoute.value ? 'bg-black' : 'bg-[var(--border-color)]',
+  isLightTheme.value ? 'bg-black' : 'bg-[var(--border-color)]',
 ])
 const dropdownClass = computed(() => [
   'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 overflow-hidden rounded-lg shadow-xl min-w-[120px]',
-  isHighContrastRoute.value
+  isLightTheme.value
     ? 'bg-white border-2 border-black'
     : 'bg-gray-900/95 backdrop-blur border border-white/10',
 ])
@@ -276,7 +314,7 @@ const isActive = (path: string) => {
 }
 
 function getActiveStyle(variant: string = 'cyan') {
-  if (isHighContrastRoute.value) {
+  if (isLightTheme.value) {
     return 'bg-black text-white shadow-none'
   }
 
@@ -290,7 +328,7 @@ function getActiveStyle(variant: string = 'cyan') {
 }
 
 function getActiveIndicatorClass(variant: string = 'cyan') {
-  if (isHighContrastRoute.value) {
+  if (isLightTheme.value) {
     return 'bg-black'
   }
 
@@ -305,15 +343,15 @@ function getActiveIndicatorClass(variant: string = 'cyan') {
 
 function getDropdownItemClass(loc: string) {
   const base = 'w-full px-3 py-2 text-xs text-left transition-colors flex items-center justify-between'
-  if (isHighContrastRoute.value) {
+  if (isLightTheme.value) {
     return `${base} ${locale.value === loc ? 'text-white bg-black' : 'text-black hover:bg-black/10'}`
   }
   return `${base} hover:bg-gray-700/50 ${locale.value === loc ? 'text-cyan-400 bg-cyan-900/20' : 'text-gray-300'}`
 }
 
 function getHeaderItemClass(path: string) {
-  const base = 'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors'
-  if (isHighContrastRoute.value) {
+  const base = 'inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors'
+  if (isLightTheme.value) {
     return `${base} ${isActive(path) ? 'bg-black text-white' : 'text-black hover:bg-black/10'}`
   }
   return `${base} ${isActive(path) ? 'bg-cyan-500/20 text-cyan-200' : 'text-cyan-100 hover:bg-cyan-500/15 hover:text-white'}`
@@ -328,8 +366,8 @@ const baseSize = 44
 const maxSize = 58
 const neighborSize = 50
 
-// +2 for language switcher and dark mode
-const totalDockItems = computed(() => navItems.length + 2)
+// +1 for language switcher (dark mode moved to header)
+const totalDockItems = computed(() => navItems.length + 1)
 const itemSizes = ref<number[]>(Array(totalDockItems.value).fill(baseSize))
 
 function onDockHover(index: number) {

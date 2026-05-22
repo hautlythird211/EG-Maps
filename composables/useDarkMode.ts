@@ -1,6 +1,6 @@
 export function useDarkMode() {
   // Use a ref to track initialization - default to false to avoid hydration mismatch
-  const isDark = useState<boolean>('darkMode', () => false)
+  const isDark = useState<boolean>('darkMode', () => true)
   const isInitialized = useState<boolean>('darkModeInitialized', () => false)
 
   // Apply dark class to html element - only runs on client

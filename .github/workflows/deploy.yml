@@ -38,15 +38,23 @@ jobs:
           NUXT_APP_BASE_URL: /EG-Maps/
           NUXT_PUBLIC_MAPTILER_API_KEY: ${{ secrets.NUXT_PUBLIC_MAPTILER_API_KEY }}
 
-      - name: Verify output
+      - name: Restructure for GitHub Pages
         run: |
-          echo "Output directory contents:"
-          ls -la .output/public
-          echo "Build complete"
+          mkdir -p .output/eg-maps/EG-Maps
+          cp -r .output/public/* .output/eg-maps/EG-Maps/
+          # Copy index.html as 404.html fallback for unknown routes
+          cp .output/public/200.html .output/eg-maps/EG-Maps/404.html 2>/dev/null || cp .output/public/index.html .output/eg-maps/EG-Maps/404.html 2>/dev/null || true
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-build
+          path: .output/eg-maps
+          retention-days: 1
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .output/public
+          path: .output/eg-maps
 
   test:
     needs: build
@@ -66,16 +74,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build static site
-        run: pnpm generate
-        env:
-          NUXT_APP_BASE_URL: /EG-Maps/
-          NUXT_PUBLIC_MAPTILER_API_KEY: ${{ secrets.NUXT_PUBLIC_MAPTILER_API_KEY }}
-
-      - name: Restructure output for testing
-        run: |
-          mkdir -p .output/public/EG-Maps
-          cd .output/public && find . -maxdepth 1 -not -name '.' -not -name 'EG-Maps' -exec mv {} EG-Maps/ \;
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-build
+          path: .output/public
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
@@ -83,7 +86,7 @@ jobs:
       - name: Run Playwright tests
         run: pnpm exec playwright test --config=playwright.static.config.ts
         env:
-          BASE_PATH: /EG-Maps
+          BASE_URL: http://localhost:3000/EG-Maps
 
   deploy:
     needs: [build, test]

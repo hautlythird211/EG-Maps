@@ -235,6 +235,7 @@ interface Particle {
   speed: number
   size: number
   color: string
+  group?: string
   trail: { x: number; y: number }[]
 }
 
@@ -261,13 +262,20 @@ export function createMapParticleSystem({
   let particleCanvas: HTMLCanvasElement | null = null
   let particleAnimationFrame: number | null = null
   let particles: Particle[] = []
+  let activeGroup: string | null = null
+  let groupChangeTimer: ReturnType<typeof setTimeout> | null = null
 
   function stop() {
     if (particleAnimationFrame) {
       cancelAnimationFrame(particleAnimationFrame)
       particleAnimationFrame = null
     }
+    if (groupChangeTimer) {
+      clearTimeout(groupChangeTimer)
+      groupChangeTimer = null
+    }
     particles = []
+    activeGroup = null
     if (particleCanvas?.parentNode) {
       particleCanvas.parentNode.removeChild(particleCanvas)
     }
@@ -279,7 +287,39 @@ export function createMapParticleSystem({
     const mobile = isMobile()
     if (!features.length || particles.length > (mobile ? 45 : 90)) return
 
-    const feature = features[Math.floor(Math.random() * features.length)]
+    const speciesFeatures = features.filter(f => f.properties?.dataset === 'endangered-species')
+    if (!speciesFeatures.length) {
+      const feature = features[Math.floor(Math.random() * features.length)]
+      const [from, control, to] = feature.geometry.coordinates as [number, number][]
+      if (!from || !control || !to) return
+
+      particles.push({
+        from,
+        control,
+        to,
+        progress: 0,
+        speed: mobile ? 0.006 + Math.random() * 0.008 : 0.004 + Math.random() * 0.007,
+        size: mobile ? 1.2 : 1.5 + Math.random() * 1.2,
+        color: feature.properties?.color || '#ffffff',
+        trail: [],
+      })
+      return
+    }
+
+    if (!activeGroup || Math.random() < 0.15) {
+      const groups = [...new Set(speciesFeatures.map(f => f.properties?.group).filter(Boolean))]
+      if (groups.length) {
+        activeGroup = groups[Math.floor(Math.random() * groups.length)] as string
+      }
+    }
+
+    const groupFeatures = activeGroup
+      ? speciesFeatures.filter(f => f.properties?.group === activeGroup)
+      : speciesFeatures
+
+    if (!groupFeatures.length) return
+
+    const feature = groupFeatures[Math.floor(Math.random() * groupFeatures.length)]
     const [from, control, to] = feature.geometry.coordinates as [number, number][]
     if (!from || !control || !to) return
 
@@ -291,6 +331,7 @@ export function createMapParticleSystem({
       speed: mobile ? 0.006 + Math.random() * 0.008 : 0.004 + Math.random() * 0.007,
       size: mobile ? 1.2 : 1.5 + Math.random() * 1.2,
       color: feature.properties?.color || '#ffffff',
+      group: activeGroup || undefined,
       trail: [],
     })
   }

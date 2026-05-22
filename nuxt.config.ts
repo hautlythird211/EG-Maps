@@ -7,8 +7,8 @@ export default defineNuxtConfig({
 
   plugins: ['~/plugins/iconify-icon.client.ts'],
 
-  // Pure SSG - no SSR, fully static for GitHub Pages
-  ssr: false,
+  // SSG with prerendered HTML for all routes - enables proper GitHub Pages indexing and refresh
+  ssr: true,
   routeRules: {
     '/**': { prerender: true },
   },
@@ -32,7 +32,7 @@ export default defineNuxtConfig({
           innerHTML: `(function() {
             try {
               var saved = localStorage.getItem('darkMode');
-              if (saved === 'true' || (saved === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              if (saved === 'true' || saved === null) {
                 document.documentElement.classList.add('dark');
               }
             } catch (e) {}
@@ -71,7 +71,7 @@ export default defineNuxtConfig({
     preset: 'static',
     prerender: {
       crawlLinks: true,
-      routes: ['/', '/info', '/project-grants', '/project-grants/3d', '/endangered-species', '/endangered-species/3d'],
+      routes: ['/', '/globe', '/info', '/project-grants', '/project-grants/3d', '/endangered-species', '/endangered-species/3d'],
     },
     compressPublicAssets: true,
   },

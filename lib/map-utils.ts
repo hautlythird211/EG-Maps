@@ -94,7 +94,7 @@ export function buildProjectPopupHTML(project: ProjectData, translations?: Popup
 export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPopupTranslations): string {
   const color = GROUP_COLORS[species.taxonomicGroup] ?? '#B64032'
   const endangermentColor = species.endangerment.toLowerCase().includes('critical') ? '#dc2626' : 
-                           species.endangerment.toLowerCase().includes('endangered') ? '#ea580c' : '#d97706'
+                            species.endangerment.toLowerCase().includes('endangered') ? '#ea580c' : '#d97706'
   const t = translations || {
     scientificName: 'Scientific Name',
     threatTypes: 'Threat Types',
@@ -104,13 +104,26 @@ export function buildSpeciesPopupHTML(species: Species, translations?: SpeciesPo
     ecosystem: 'Ecosystem'
   }
   const groupLabel = t.groupLabels?.[species.taxonomicGroup] ?? species.taxonomicGroup
-  const imageHTML = species.imageUrl
-    ? `
+  
+  let imageHTML = ''
+  if (species.imageUrl) {
+    let thumbUrl = species.imageUrl
+    if (species.imageUrl.includes('commons.wikimedia.org/wiki/Special:FilePath/')) {
+      const filename = species.imageUrl.split('/Special:FilePath/')[1]
+      if (filename) {
+        thumbUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(filename)}?width=560`
+      }
+    } else if (species.imageUrl.includes('upload.wikimedia.org')) {
+      const separator = species.imageUrl.includes('?') ? '&' : '?'
+      thumbUrl = `${species.imageUrl}${separator}width=560`
+    }
+    
+    imageHTML = `
       <div class="species-image-frame" style="border-color: ${color}55;">
-        <img src="${escapeHtml(species.imageUrl)}" alt="${escapeHtml(species.commonName)}" class="species-image" loading="lazy" referrerpolicy="no-referrer" />
+        <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(species.commonName)}" class="species-image" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'" />
       </div>
     `
-    : ''
+  }
 
   return `
     <div class="species-popup-wrapper" style="word-wrap: break-word; white-space: normal; overflow: hidden;">

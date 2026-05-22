@@ -204,6 +204,10 @@
     @apply px-2.5 py-1.5 text-xs;
   }
 
+  .map-view-tab-sm {
+    @apply px-2.5 py-1.5 text-xs;
+  }
+
   .map-view-tab-active {
     @apply bg-black text-white border-black;
   }
