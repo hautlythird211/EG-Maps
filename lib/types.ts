@@ -19,13 +19,13 @@ export interface Species {
   lng: number;
   imageUrl: string;
   imageCredit: string;
-  description: string;
-  endangerment: string;
-  ecosystemNeeds: string;
-  actions: string;
+  description?: string;
+  endangerment?: string;
+  ecosystemNeeds?: string;
+  actions?: string;
   threatTypes: string[];
-  iucnUrl: string;
-  range: {
+  iucnUrl?: string;
+  range?: {
     type: string;
     coordinates: number[][][];
   };

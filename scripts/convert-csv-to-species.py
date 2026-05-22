@@ -108,27 +108,6 @@ BIOME_COORDS = [
     {"lat": -14.0, "lng": -44.0, "region_en": "São Francisco Basin", "region_pt": "Bacia do São Francisco", "ecosystem": "Freshwater"},
 ]
 
-# === REGION POLYGON (approximate Brazil outline) ===
-BRAZIL_POLYGON = [
-    [
-        [-73.0, -5.0],
-        [-73.0, 5.0],
-        [-60.0, 5.0],
-        [-50.0, 4.0],
-        [-35.0, -5.0],
-        [-34.0, -10.0],
-        [-35.0, -20.0],
-        [-38.0, -28.0],
-        [-48.0, -34.0],
-        [-52.0, -34.0],
-        [-57.0, -30.0],
-        [-57.0, -20.0],
-        [-60.0, -15.0],
-        [-70.0, -10.0],
-        [-73.0, -5.0],
-    ]
-]
-
 def slugify(text):
     """Create a URL-friendly slug from text."""
     text = text.lower().strip()
@@ -448,15 +427,6 @@ for idx, entry in enumerate(all_entries):
     image_url = f"/images/species/{image_filename}"
     image_credit = get_image_credit()
 
-    # IUCN URL
-    iucn_url = "https://www.iucnredlist.org/"
-
-    # Range polygon (approximate Brazil region)
-    range_polygon = {
-        "type": "Polygon",
-        "coordinates": BRAZIL_POLYGON,
-    }
-
     species_obj = {
         "id": sp_id,
         "commonName": common_name,
@@ -469,13 +439,7 @@ for idx, entry in enumerate(all_entries):
         "lng": biome["lng"],
         "imageUrl": image_url,
         "imageCredit": image_credit,
-        "description": content["en"]["description"],
-        "endangerment": content["en"]["endangerment"],
-        "ecosystemNeeds": content["en"]["ecosystemNeeds"],
-        "actions": content["en"]["actions"],
         "threatTypes": threat_types,
-        "iucnUrl": iucn_url,
-        "range": range_polygon,
         "content": content,
     }
 
@@ -484,12 +448,40 @@ for idx, entry in enumerate(all_entries):
     if (idx + 1) % 500 == 0:
         print(f"  Processed {idx + 1}/{len(all_entries)} entries...")
 
-# Write output
-output_path = '/home/ubuntu/EG-Maps/public/data/species.json'
+# Write per-dataset output
+import os
+data_dir = '/home/ubuntu/EG-Maps/public/data/species'
+os.makedirs(data_dir, exist_ok=True)
+
+dataset_id = 'icmbio-brazil'
+output_path = os.path.join(data_dir, f'{dataset_id}.json')
 with open(output_path, 'w', encoding='utf-8') as f:
     json.dump(species_list, f, ensure_ascii=False, indent=2)
 
 print(f"\nDone! Written {len(species_list)} species to {output_path}")
+
+# Write dataset index
+index_path = os.path.join(data_dir, 'index.json')
+group_distribution = defaultdict(int)
+for s in species_list:
+    group_distribution[s["taxonomicGroup"]] += 1
+dataset_index = {
+    "datasets": [
+        {
+            "id": dataset_id,
+            "name": "ICMBio Brazilian Red List",
+            "source": "ICMBio - Chico Mendes Institute for Biodiversity Conservation",
+            "url": "https://www.gov.br/icmbio/pt-br/assuntos/biodiversidade",
+            "speciesCount": len(species_list),
+            "taxonomicGroups": dict(sorted(group_distribution.items())),
+            "description": "Threatened species of Brazil from the official Brazilian Red List (2021)",
+        }
+    ]
+}
+with open(index_path, 'w', encoding='utf-8') as f:
+    json.dump(dataset_index, f, ensure_ascii=False, indent=2)
+
+print(f"Written dataset index to {index_path}")
 
 # === STATISTICS ===
 cat_counts = defaultdict(int)

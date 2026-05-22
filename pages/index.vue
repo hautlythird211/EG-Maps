@@ -97,9 +97,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { allProjectsData } from '@/lib/project-data'
-import speciesData from '~/public/data/species.json'
 import { formatCompact } from '@/lib/utils'
 
 const { t } = useI18n()
@@ -116,9 +115,24 @@ useHead({
   ],
 })
 
-const speciesList = speciesData as Array<{ taxonomicGroup: string }>
-const speciesCount = computed(() => speciesList.length)
-const taxonomicGroupCount = computed(() => new Set(speciesList.map(s => s.taxonomicGroup)).size)
+const speciesCount = ref(0)
+const taxonomicGroupCount = ref(0)
+
+if (import.meta.client) {
+  onMounted(async () => {
+    try {
+      const res = await fetch('/data/species/index.json')
+      if (res.ok) {
+        const index = await res.json()
+        const ds = index.datasets?.[0]
+        if (ds) {
+          speciesCount.value = ds.speciesCount ?? 0
+          taxonomicGroupCount.value = Object.keys(ds.taxonomicGroups ?? {}).length
+        }
+      }
+    } catch {}
+  })
+}
 
 const projectStats = computed(() => {
   const totalProjects = allProjectsData.length

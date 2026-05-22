@@ -201,8 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import speciesData from '~/public/data/species.json'
+import { computed, ref, onMounted } from 'vue'
 import { allProjectsData } from '@/lib/project-data'
 import { formatCompact } from '@/lib/utils'
 
@@ -228,10 +227,26 @@ const tabs: Array<{ id: InfoTab; label: string; icon: string }> = [
   { id: 'feedback', label: 'Feedback', icon: 'lucide:message-square' },
 ]
 
-const speciesList = speciesData as Array<{ taxonomicGroup: string }>
-const speciesCount = computed(() => speciesList.length)
-const taxonomicGroups = computed(() => [...new Set(speciesList.map(s => s.taxonomicGroup))].sort())
-const taxonomicGroupCount = computed(() => taxonomicGroups.value.length)
+const speciesCount = ref(0)
+const taxonomicGroups = ref<string[]>([])
+const taxonomicGroupCount = ref(0)
+
+if (import.meta.client) {
+  onMounted(async () => {
+    try {
+      const res = await fetch('/data/species/index.json')
+      if (res.ok) {
+        const index = await res.json()
+        const ds = index.datasets?.[0]
+        if (ds) {
+          speciesCount.value = ds.speciesCount ?? 0
+          taxonomicGroups.value = Object.keys(ds.taxonomicGroups ?? {}).sort()
+          taxonomicGroupCount.value = taxonomicGroups.value.length
+        }
+      }
+    } catch {}
+  })
+}
 
 const projectCount = computed(() => allProjectsData.length)
 const directBeneficiaryCount = computed(() => allProjectsData.reduce((sum, p) => sum + p.direct_beneficiaries, 0))
