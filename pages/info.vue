@@ -187,6 +187,7 @@
 import { computed, ref } from 'vue'
 import speciesData from '~/public/data/species.json'
 import { allProjectsData } from '@/lib/project-data'
+import { formatCompact } from '@/lib/utils'
 
 const { t } = useI18n()
 
@@ -228,12 +229,6 @@ const feedback = ref({
 })
 
 const feedbackSubmitted = ref(false)
-
-function formatCompact(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1).replace('.0', '')}M`
-  if (num >= 1000) return `${(num / 1000).toFixed(1).replace('.0', '')}K`
-  return String(num)
-}
 
 function submitFeedback() {
   feedback.value.name = feedback.value.name.trim()

@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
 
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: ['@nuxtjs/tailwindcss', '@nuxt/eslint'],
 
   plugins: ['~/plugins/iconify-icon.client.ts'],
 
@@ -65,7 +65,8 @@ export default defineNuxtConfig({
   // Build settings
   typescript: {
     strict: true,
-    typeCheck: false,
+    typeCheck: true,
+    shim: false,
   },
 
   // Nitro (static output)

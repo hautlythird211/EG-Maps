@@ -66,10 +66,22 @@ function resolveLocalUrl(url: string, baseURL?: string): string {
   return baseURL + url.replace(/^\//, '')
 }
 
+function getThumbnailPath(originalUrl: string, width: number, baseURL?: string): string {
+  const filename = originalUrl.replace(/^\//, '')
+  const basename = filename.split('/').pop() || filename
+  const name = basename.replace(/\.[^.]+$/, '')
+  const prefix = baseURL && baseURL !== '/' ? baseURL : '/'
+  return `${prefix}images/species/thumb/${name}.webp`
+}
+
 export function getThumbnailUrl(originalUrl: string, width: number, baseURL?: string): string {
   if (!originalUrl) return ''
 
+  // Local files: serve WebP thumbnail for markers, original for popups
   if (!originalUrl.startsWith('http://') && !originalUrl.startsWith('https://')) {
+    if (width === MARKER_THUMB_SIZE) {
+      return getThumbnailPath(originalUrl, width, baseURL)
+    }
     return resolveLocalUrl(originalUrl, baseURL)
   }
 

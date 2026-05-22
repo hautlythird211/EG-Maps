@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`fixed ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)]' : 'top-20 left-4 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 project-filter-panel transition-all duration-300`"
+    :class="`fixed ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)]' : 'top-20 right-[calc(1rem+3.5rem)] w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 project-filter-panel transition-all duration-300`"
     :style="{ zIndex: '10001' }"
   >
     <!-- Header -->
@@ -84,7 +84,7 @@
     <!-- Filter Count with progress bar -->
     <div class="filter-count pt-2 border-t border-cyan-900/30">
       <div class="flex items-center justify-between mb-1.5">
-        <p class="text-[10px] font-heading font-semibold text-[var(--text-secondary)] tracking-wider">
+        <p class="text-[10px] font-heading font-semibold text-[var(--text-secondary)] tracking-wider" aria-live="polite" aria-atomic="true">
           {{ t('filter.showingProjects', { count: filteredCount, total: totalCount }) }}
         </p>
         <span class="text-[10px] font-medium text-cyan-400">
@@ -225,6 +225,7 @@ function resetFilters() {
 
 <style scoped>
 .project-filter-panel {
+  background: #000;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }

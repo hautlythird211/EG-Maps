@@ -155,14 +155,14 @@
     </Transition>
 
     <!-- Detached fullscreen species popup overlay -->
-    <div v-if="showSpeciesOverlay" class="species-popup-overlay-fixed" @click.self="closeSpeciesOverlay">
-      <button class="species-popup-close-btn-fixed" @click="closeSpeciesOverlay">&times;</button>
+    <div v-if="showSpeciesOverlay" class="species-popup-overlay-fixed" role="dialog" aria-modal="true" aria-label="Species details" @click.self="closeSpeciesOverlay" @keydown.esc="closeSpeciesOverlay">
+      <button ref="speciesCloseBtnRef" class="species-popup-close-btn-fixed" @click="closeSpeciesOverlay" aria-label="Close species details"><Icon name="lucide:x" class="h-6 w-6" /></button>
       <div class="species-popup-content-fixed" v-html="speciesOverlayHTML"></div>
     </div>
 
     <!-- Detached fullscreen project popup overlay -->
-    <div v-if="showProjectOverlay" class="project-popup-overlay-fixed" @click.self="closeProjectOverlay">
-      <button class="project-popup-close-btn-fixed" @click="closeProjectOverlay">&times;</button>
+    <div v-if="showProjectOverlay" class="project-popup-overlay-fixed" role="dialog" aria-modal="true" aria-label="Project details" @click.self="closeProjectOverlay" @keydown.esc="closeProjectOverlay">
+      <button ref="projectCloseBtnRef" class="project-popup-close-btn-fixed" @click="closeProjectOverlay" aria-label="Close project details"><Icon name="lucide:x" class="h-6 w-6" /></button>
       <div class="project-popup-content-fixed" v-html="projectOverlayHTML"></div>
     </div>
   </div>
@@ -268,6 +268,10 @@ let pendingVisibilityUpdate = false
 let connectionFeatures: MapConnectionFeature[] = []
 let particleSystem: MapParticleSystem | null = null
 
+const speciesCloseBtnRef = ref<HTMLElement | null>(null)
+const projectCloseBtnRef = ref<HTMLElement | null>(null)
+let lastFocusedEl: HTMLElement | null = null
+
 function openSpeciesOverlay(species: Species) {
   const localizedSpecies = getLocalizedSpecies(species)
   const speciesPopupTranslations = {
@@ -281,11 +285,14 @@ function openSpeciesOverlay(species: Species) {
   }
   speciesOverlayHTML.value = buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations, baseURL)
   showSpeciesOverlay.value = true
+  lastFocusedEl = document.activeElement as HTMLElement
+  nextTick(() => speciesCloseBtnRef.value?.focus())
 }
 
 function closeSpeciesOverlay() {
   showSpeciesOverlay.value = false
   speciesOverlayHTML.value = ''
+  nextTick(() => lastFocusedEl?.focus())
 }
 
 function openProjectOverlay(project: ProjectData) {
@@ -299,11 +306,14 @@ function openProjectOverlay(project: ProjectData) {
   }
   projectOverlayHTML.value = buildProjectPopupHTML(project, projectPopupTranslations)
   showProjectOverlay.value = true
+  lastFocusedEl = document.activeElement as HTMLElement
+  nextTick(() => projectCloseBtnRef.value?.focus())
 }
 
 function closeProjectOverlay() {
   showProjectOverlay.value = false
   projectOverlayHTML.value = ''
+  nextTick(() => lastFocusedEl?.focus())
 }
 
 function taxonomicGroupLabel(group: string) {
@@ -383,31 +393,35 @@ function fitPopupToScreen(popup: maplibregl.Popup) {
   requestAnimationFrame(() => {
     const rect = content.getBoundingClientRect()
     
-    // Calculate if popup needs to be repositioned to top of screen
-    let topOffset = -rect.top + margin
-    let leftOffset = -rect.left + margin
-    
-    // If popup goes off right edge
-    if (rect.right > window.innerWidth - margin) {
-      leftOffset = window.innerWidth - rect.width - margin
-    }
-    
-    // If popup goes off left edge
-    if (rect.left < margin) {
-      leftOffset = margin - rect.left
-    }
-    
-    // If popup is taller than screen, position at top and allow scrolling
-    if (rect.height > maxHeight) {
-      topOffset = margin - rect.top
-      content.style.maxHeight = `${maxHeight}px`
-      content.style.overflowY = 'auto'
-    }
-    
-    // Apply positioning
-    if (topOffset !== 0 || leftOffset !== 0) {
-      const offsetElement = popupEl.querySelector('.maplibregl-popup-tip') as HTMLElement
-      // The popup positioning is handled by MapLibre, but we can adjust content
+    // Reposition popup to keep it fully on screen
+    const offsetElement = popupEl.querySelector('.maplibregl-popup-tip') as HTMLElement
+    if (offsetElement) {
+      let topOffset = -rect.top + margin
+      let leftOffset = -rect.left + margin
+
+      if (rect.right > window.innerWidth - margin) {
+        leftOffset = window.innerWidth - rect.width - margin - rect.left
+      }
+
+      if (rect.left < margin) {
+        leftOffset = margin - rect.left
+      }
+
+      if (rect.height > maxHeight) {
+        topOffset = margin - rect.top
+        content.style.maxHeight = `${maxHeight}px`
+        content.style.overflowY = 'auto'
+      }
+
+      const tip = offsetElement
+      const currentTransform = tip.style.transform || ''
+      const translateMatch = currentTransform.match(/translate\(([^)]+)\)/)
+      if (translateMatch) {
+        const parts = translateMatch[1].split(',').map(s => parseFloat(s.trim()) || 0)
+        const adjustedX = parts[0] + leftOffset
+        const adjustedY = parts[1] + topOffset
+        tip.style.transform = currentTransform.replace(translateMatch[0], `translate(${adjustedX}px, ${adjustedY}px)`)
+      }
     }
   })
 }
@@ -497,6 +511,7 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   el.style.cursor = 'pointer'
   el.style.pointerEvents = 'auto'
   el.style.zIndex = '10'
+  el.style.willChange = 'transform'
 
   const inner = document.createElement('div')
   inner.style.width = `${metrics.visualSize}px`
@@ -599,13 +614,22 @@ function rebuildMarkers() {
   }
 
   if (activeDataset.value === 'project-grants') {
-    visibleProjects.value.forEach((project) => {
+    const projectList = isMobile.value
+      ? visibleProjects.value.slice(0, 60)
+      : visibleProjects.value
+    projectList.forEach((project) => {
       if (!isValidCoordinate(project.latitude, project.longitude)) return
 
       const el = createProjectMarkerElement(project)
       el.style.cursor = 'pointer'
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('role', 'button')
+      el.setAttribute('aria-label', project.project_title)
       el.addEventListener('click', () => {
         openProjectOverlay(project)
+      })
+      el.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectOverlay(project) }
       })
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
@@ -615,7 +639,10 @@ function rebuildMarkers() {
       markers.push(marker)
     })
   } else if (activeDataset.value === 'endangered-species') {
-    const speciesToRender = visibleSpecies.value.filter(s => isValidCoordinate(s.lat, s.lng))
+    const speciesList = isMobile.value
+      ? visibleSpecies.value.slice(0, 80)
+      : visibleSpecies.value
+    const speciesToRender = speciesList.filter(s => isValidCoordinate(s.lat, s.lng))
     const imageUrls = speciesToRender.map(s => s.imageUrl).filter(Boolean)
     
     preloadSpeciesImages(imageUrls, true, baseURL)
@@ -623,8 +650,14 @@ function rebuildMarkers() {
     speciesToRender.forEach((species) => {
       const el = createSpeciesMarkerElement(species)
       el.style.cursor = 'pointer'
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('role', 'button')
+      el.setAttribute('aria-label', species.commonName)
       el.addEventListener('click', () => {
         openSpeciesOverlay(species)
+      })
+      el.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSpeciesOverlay(species) }
       })
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
@@ -904,6 +937,15 @@ watch(showHexGrid, async (visible) => {
 watch(showConnections, () => {
   addConnections()
   if (showConnections.value) startParticles()
+})
+
+// Pause particles when overlay is open to save CPU
+watch([showSpeciesOverlay, showProjectOverlay], ([speciesOpen, projectOpen]) => {
+  if (speciesOpen || projectOpen) {
+    cleanupParticles()
+  } else if (showConnections.value) {
+    startParticles()
+  }
 })
 
 onUnmounted(() => {

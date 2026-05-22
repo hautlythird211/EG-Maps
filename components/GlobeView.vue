@@ -138,14 +138,14 @@
     </Transition>
 
     <!-- Detached fullscreen species popup overlay -->
-    <div v-if="showSpeciesOverlay" class="species-popup-overlay-fixed" @click.self="closeSpeciesOverlay">
-      <button class="species-popup-close-btn-fixed" @click="closeSpeciesOverlay">&times;</button>
+    <div v-if="showSpeciesOverlay" class="species-popup-overlay-fixed" role="dialog" aria-modal="true" aria-label="Species details" @click.self="closeSpeciesOverlay" @keydown.esc="closeSpeciesOverlay">
+      <button ref="speciesCloseBtnRef" class="species-popup-close-btn-fixed" @click="closeSpeciesOverlay" aria-label="Close species details"><Icon name="lucide:x" class="h-6 w-6" /></button>
       <div class="species-popup-content-fixed" v-html="speciesOverlayHTML"></div>
     </div>
 
     <!-- Detached fullscreen project popup overlay -->
-    <div v-if="showProjectOverlay" class="project-popup-overlay-fixed" @click.self="closeProjectOverlay">
-      <button class="project-popup-close-btn-fixed" @click="closeProjectOverlay">&times;</button>
+    <div v-if="showProjectOverlay" class="project-popup-overlay-fixed" role="dialog" aria-modal="true" aria-label="Project details" @click.self="closeProjectOverlay" @keydown.esc="closeProjectOverlay">
+      <button ref="projectCloseBtnRef" class="project-popup-close-btn-fixed" @click="closeProjectOverlay" aria-label="Close project details"><Icon name="lucide:x" class="h-6 w-6" /></button>
       <div class="project-popup-content-fixed" v-html="projectOverlayHTML"></div>
     </div>
   </div>
@@ -237,6 +237,9 @@ let map: maplibregl.Map | null = null
 let markers: maplibregl.Marker[] = []
 let isMounted = true
 let pendingVisibilityUpdate = false
+const speciesCloseBtnRef = ref<HTMLElement | null>(null)
+const projectCloseBtnRef = ref<HTMLElement | null>(null)
+let lastFocusedEl: HTMLElement | null = null
 let connectionFeatures: MapConnectionFeature[] = []
 let particleSystem: MapParticleSystem | null = null
 let rotationAnimationId: number | null = null
@@ -256,11 +259,14 @@ function openSpeciesOverlay(species: Species) {
   }
   speciesOverlayHTML.value = buildSpeciesPopupHTML(localizedSpecies, speciesPopupTranslations, baseURL)
   showSpeciesOverlay.value = true
+  lastFocusedEl = document.activeElement as HTMLElement
+  nextTick(() => speciesCloseBtnRef.value?.focus())
 }
 
 function closeSpeciesOverlay() {
   showSpeciesOverlay.value = false
   speciesOverlayHTML.value = ''
+  nextTick(() => lastFocusedEl?.focus())
 }
 
 function openProjectOverlay(project: ProjectData) {
@@ -274,11 +280,14 @@ function openProjectOverlay(project: ProjectData) {
   }
   projectOverlayHTML.value = buildProjectPopupHTML(project, projectPopupTranslations)
   showProjectOverlay.value = true
+  lastFocusedEl = document.activeElement as HTMLElement
+  nextTick(() => projectCloseBtnRef.value?.focus())
 }
 
 function closeProjectOverlay() {
   showProjectOverlay.value = false
   projectOverlayHTML.value = ''
+  nextTick(() => lastFocusedEl?.focus())
 }
 
 const MAPTILER_API_KEY = useRuntimeConfig().public.maptilerApiKey || ''
@@ -636,8 +645,14 @@ function rebuildMarkers() {
 
       const el = createProjectMarkerElement(project)
       el.style.cursor = 'pointer'
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('role', 'button')
+      el.setAttribute('aria-label', project.project_title)
       el.addEventListener('click', () => {
         openProjectOverlay(project)
+      })
+      el.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectOverlay(project) }
       })
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
@@ -659,8 +674,14 @@ function rebuildMarkers() {
     speciesToRender.forEach((species) => {
       const el = createSpeciesMarkerElement(species)
       el.style.cursor = 'pointer'
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('role', 'button')
+      el.setAttribute('aria-label', species.commonName)
       el.addEventListener('click', () => {
         openSpeciesOverlay(species)
+      })
+      el.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSpeciesOverlay(species) }
       })
 
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
@@ -780,6 +801,7 @@ function debouncedSetupHexGrid() {
   }, 200)
 }
 
+// Globe-specific global styles only — all shared popup/overlay styles are in main.css and UnifiedMap.vue
 if (typeof document !== 'undefined' && !document.getElementById('globe-styles')) {
   const style = document.createElement('style')
   style.id = 'globe-styles'
@@ -789,678 +811,11 @@ if (typeof document !== 'undefined' && !document.getElementById('globe-styles'))
       50% { transform: scale(1.1); opacity: 0.4; }
       100% { transform: scale(0.95); opacity: 0; }
     }
-    .maplibregl-popup-content {
-      background: rgba(0, 0, 0, 0.95) !important;
-      border-radius: 8px !important;
-      border: 1px solid rgba(6, 182, 212, 0.4) !important;
-      box-shadow: 0 0 30px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05) !important;
-      padding: 0 !important;
-      min-width: 260px;
-    }
-    .maplibregl-popup-tip {
-      border-top-color: rgba(6, 182, 212, 0.7) !important;
-      border-bottom-color: rgba(6, 182, 212, 0.7) !important;
-    }
-    .maplibregl-popup-close-button {
-      color: rgba(6, 182, 212, 0.8) !important;
-      font-size: 18px !important;
-      padding: 4px 8px !important;
-      background: transparent !important;
-      border: none !important;
-      top: 8px !important;
-      right: 8px !important;
-    }
-    .maplibregl-popup-close-button:hover {
-      background-color: rgba(6, 182, 212, 0.2) !important;
-      color: rgba(6, 182, 212, 1) !important;
-    }
-    .maplibregl-ctrl-bottom-right {
-      margin-bottom: 5px;
-      margin-right: 5px;
-    }
-    .maplibregl-ctrl-attrib-inner {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 10px;
-      background-color: rgba(0, 0, 0, 0.6) !important;
-    }
-    .maplibregl-ctrl-attrib-inner a {
-      color: rgba(6, 182, 212, 0.7);
-      text-decoration: none;
-    }
     .maplibregl-map {
       background-color: transparent !important;
     }
     .globe-marker-item {
       transform: translateZ(0);
-    }
-    .star-field {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      background: #000;
-    }
-    .star-field::before,
-    .star-field::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-repeat: repeat;
-    }
-    .star-field::before {
-      background-image:
-        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1.5px 1.5px at 40% 10%, rgba(255,255,255,1), transparent),
-        radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,0.8), transparent),
-        radial-gradient(1.5px 1.5px at 85% 55%, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 30% 85%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1.5px 1.5px at 50% 65%, rgba(255,255,255,0.8), transparent),
-        radial-gradient(1px 1px at 65% 80%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 80% 90%, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1px 1px at 95% 40%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1.5px 1.5px at 5% 50%, rgba(255,255,255,1), transparent),
-        radial-gradient(1px 1px at 20% 25%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 45% 90%, rgba(255,255,255,0.8), transparent),
-        radial-gradient(1px 1px at 60% 5%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1.5px 1.5px at 75% 35%, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1px 1px at 90% 75%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 35% 55%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 50% 30%, rgba(255,255,255,0.8), transparent);
-      background-size: 200px 200px;
-      animation: twinkle 4s ease-in-out infinite alternate;
-    }
-    .star-field::after {
-      background-image:
-        radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1.5px 1.5px at 28% 48%, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1px 1px at 42% 8%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 58% 52%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1.5px 1.5px at 72% 18%, rgba(255,255,255,1), transparent),
-        radial-gradient(1px 1px at 88% 62%, rgba(255,255,255,0.8), transparent),
-        radial-gradient(1px 1px at 8% 78%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 38% 92%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1.5px 1.5px at 52% 38%, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1px 1px at 68% 72%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 82% 88%, rgba(255,255,255,0.8), transparent),
-        radial-gradient(1px 1px at 98% 32%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1.5px 1.5px at 18% 58%, rgba(255,255,255,1), transparent),
-        radial-gradient(1px 1px at 32% 12%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 48% 82%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 62% 28%, rgba(255,255,255,0.9), transparent),
-        radial-gradient(1.5px 1.5px at 78% 42%, rgba(255,255,255,0.8), transparent),
-        radial-gradient(1px 1px at 92% 68%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 22% 95%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,0.5), transparent);
-      background-size: 250px 250px;
-      animation: twinkle 5s ease-in-out infinite alternate-reverse;
-    }
-    @keyframes twinkle {
-      0% { opacity: 0.6; }
-      50% { opacity: 1; }
-      100% { opacity: 0.7; }
-    }
-    /* Project Popup Styles */
-    .project-popup-wrapper {
-      padding: 16px;
-      min-width: 260px;
-      width: min(420px, calc(100vw - 32px));
-      max-width: calc(100vw - 32px);
-      word-wrap: break-word;
-      white-space: normal;
-      overflow: hidden;
-    }
-    .project-popup-header {
-      position: relative;
-      padding-bottom: 12px;
-      margin-bottom: 12px;
-    }
-    .project-corner-accent {
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(6, 182, 212, 0.5);
-    }
-    .project-corner-accent.top-left {
-      top: -4px;
-      left: -4px;
-      border-right: none;
-      border-bottom: none;
-    }
-    .project-corner-accent.top-right {
-      top: -4px;
-      right: -4px;
-      border-left: none;
-      border-bottom: none;
-    }
-    .project-header-content {
-      position: relative;
-      z-index: 1;
-    }
-    .project-status-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .project-badge {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: rgba(6, 182, 212, 0.9);
-      background: rgba(6, 182, 212, 0.1);
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(6, 182, 212, 0.3);
-    }
-    .project-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      box-shadow: 0 0 8px currentColor;
-    }
-    .project-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #f0f0f0;
-      line-height: 1.4;
-      margin: 0;
-    }
-    .project-header-line {
-      height: 1px;
-      background: var(--border-color);
-      margin-top: 12px;
-    }
-    .project-popup-body {
-      padding: 0 4px;
-    }
-    .project-stat-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .project-stat-icon {
-      color: rgba(6, 182, 212, 0.7);
-      margin-top: 2px;
-      flex-shrink: 0;
-    }
-    .project-stat-content {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .project-stat-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.5);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .project-stat-value {
-      font-size: 13px;
-      color: #d1d5db;
-    }
-    .project-divider {
-      height: 1px;
-      background: rgba(255, 255, 255, 0.1);
-      margin: 12px 0;
-    }
-    .project-metrics {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .project-metric {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .project-metric-header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .project-metric-value {
-      font-size: 16px;
-      font-weight: 600;
-    }
-    .project-metric-value.direct {
-      color: #22d3ee;
-    }
-    .project-metric-value.indirect {
-      color: #a855f7;
-    }
-    .project-popup-footer {
-      margin-top: 12px;
-      height: 3px;
-      position: relative;
-    }
-    .project-footer-glow {
-      height: 100%;
-      width: 60%;
-      opacity: 0.4;
-      filter: blur(2px);
-    }
-    /* Species Popup Styles */
-    .species-popup-wrapper {
-      padding: 0;
-      min-width: 280px;
-      width: min(560px, calc(100vw - 32px));
-      max-width: calc(100vw - 32px);
-      max-height: calc(100vh - 60px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      word-wrap: break-word;
-      white-space: normal;
-    }
-    .species-header {
-      position: relative;
-      padding: 16px;
-      border-bottom: 1px solid;
-      background: rgba(0, 0, 0, 0.3);
-    }
-    .species-header-bg {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
-    .species-ornament {
-      margin-bottom: 8px;
-    }
-    .species-ornament.top {
-      margin-bottom: 12px;
-    }
-    .species-ornament.bottom {
-      margin-top: 12px;
-      margin-bottom: 0;
-    }
-    .species-badges {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-    .species-category-badge {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: white;
-      padding: 3px 10px;
-      border-radius: 4px;
-    }
-    .species-group-badge {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 4px;
-      border: 1px solid;
-      background: transparent;
-    }
-    .species-common-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: #f5f5f5;
-      margin: 0 0 4px 0;
-      line-height: 1.3;
-      position: relative;
-      z-index: 1;
-    }
-    .species-scientific-name {
-      font-size: 12px;
-      font-style: italic;
-      color: rgba(255, 255, 255, 0.6);
-      margin: 0;
-      position: relative;
-      z-index: 1;
-    }
-    .species-body {
-      padding: 14px 16px;
-    }
-    .species-description {
-      font-size: 12px;
-      line-height: 1.6;
-      color: rgba(255, 255, 255, 0.75);
-      margin: 0 0 14px 0;
-      max-height: 80px;
-      overflow-y: auto;
-    }
-    .species-details {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .species-detail-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .species-detail-row.endangerment {
-      padding-top: 10px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      margin-top: 4px;
-    }
-    .species-detail-icon {
-      color: rgba(6, 182, 212, 0.8);
-      margin-top: 1px;
-      flex-shrink: 0;
-    }
-    .species-detail-content {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      flex: 1;
-    }
-    .species-detail-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.5);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .species-detail-value {
-      font-size: 12px;
-      color: #d1d5db;
-    }
-    .species-threat-tag {
-      display: inline-block;
-      font-size: 10px;
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      padding: 2px 6px;
-      border-radius: 3px;
-      margin-right: 4px;
-      margin-bottom: 4px;
-    }
-    .endangerment-value {
-      font-weight: 600;
-    }
-    .species-footer {
-      padding: 0 16px 12px;
-    }
-    .species-footer-line {
-      height: 2px;
-      opacity: 0.6;
-    }
-    /* Fullscreen detached species popup overlay */
-    .species-popup-overlay-fixed {
-      position: fixed;
-      inset: 0;
-      z-index: 2147483647;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      animation: overlayFadeIn 0.2s ease-out;
-    }
-    @keyframes overlayFadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .species-popup-close-btn-fixed {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 2147483647;
-      width: 44px;
-      height: 44px;
-      border: 2px solid rgba(6, 182, 212, 0.5);
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.7);
-      color: #06b6d4;
-      font-size: 28px;
-      line-height: 1;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-    }
-    .species-popup-close-btn-fixed:hover {
-      background: rgba(6, 182, 212, 0.2);
-      border-color: #06b6d4;
-      transform: scale(1.1);
-    }
-    .species-popup-content-fixed {
-      width: 100%;
-      max-width: min(700px, calc(100vw - 32px));
-      max-height: calc(100vh - 32px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      border-radius: 16px;
-      background: rgba(10, 10, 15, 0.95);
-      border: 1px solid rgba(6, 182, 212, 0.2);
-      box-shadow: 0 0 60px rgba(6, 182, 212, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5);
-      animation: contentSlideIn 0.25s ease-out;
-    }
-    @keyframes contentSlideIn {
-      from { opacity: 0; transform: scale(0.95) translateY(20px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .species-popup-content-fixed .species-popup-wrapper {
-      width: 100%;
-      max-width: 100%;
-      max-height: none;
-      padding: 0;
-    }
-    .species-popup-content-fixed .species-image-frame {
-      height: clamp(180px, 30vh, 320px);
-      width: 100%;
-      border-radius: 16px 16px 0 0;
-      border-bottom: 2px solid;
-    }
-    .species-popup-content-fixed .species-header {
-      padding: clamp(16px, 3vw, 24px);
-    }
-    .species-popup-content-fixed .species-common-name {
-      font-size: clamp(20px, 3vw, 28px);
-    }
-    .species-popup-content-fixed .species-scientific-name {
-      font-size: clamp(14px, 2vw, 18px);
-    }
-    .species-popup-content-fixed .species-body {
-      padding: clamp(16px, 3vw, 24px);
-    }
-    .species-popup-content-fixed .species-description {
-      font-size: clamp(14px, 2vw, 16px);
-      line-height: 1.7;
-      max-height: none;
-      overflow: visible;
-    }
-    .species-popup-content-fixed .species-detail-row {
-      gap: 12px;
-    }
-    .species-popup-content-fixed .species-detail-icon {
-      width: 20px;
-      height: 20px;
-    }
-    .species-popup-content-fixed .species-detail-icon svg {
-      width: 18px;
-      height: 18px;
-    }
-    .species-popup-content-fixed .species-detail-label {
-      font-size: clamp(11px, 1.5vw, 13px);
-    }
-    .species-popup-content-fixed .species-detail-value {
-      font-size: clamp(13px, 2vw, 15px);
-    }
-    .species-popup-content-fixed .species-threat-tag {
-      font-size: clamp(11px, 1.5vw, 13px);
-      padding: 4px 8px;
-    }
-    @media (max-width: 640px) {
-      .species-popup-overlay-fixed {
-        padding: 0;
-      }
-      .species-popup-content-fixed {
-        max-width: 100vw;
-        max-height: 100vh;
-        border-radius: 0;
-        border: none;
-      }
-      .species-popup-content-fixed .species-image-frame {
-        height: 220px;
-        border-radius: 0;
-      }
-      .species-popup-close-btn-fixed {
-        top: 12px;
-        right: 12px;
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
-      }
-    }
-    .species-popup-content-fixed::-webkit-scrollbar {
-      width: 8px;
-    }
-    .species-popup-content-fixed::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.4);
-    }
-    .species-popup-content-fixed::-webkit-scrollbar-thumb {
-      background: rgba(6, 182, 212, 0.5);
-      border-radius: 4px;
-    }
-    .species-popup-content-fixed::-webkit-scrollbar-thumb:hover {
-      background: rgba(6, 182, 212, 0.7);
-    }
-    /* Fullscreen detached project popup overlay */
-    .project-popup-overlay-fixed {
-      position: fixed;
-      inset: 0;
-      z-index: 2147483647;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      animation: overlayFadeIn 0.2s ease-out;
-    }
-    .project-popup-close-btn-fixed {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 2147483647;
-      width: 44px;
-      height: 44px;
-      border: 2px solid rgba(6, 182, 212, 0.5);
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.7);
-      color: #06b6d4;
-      font-size: 28px;
-      line-height: 1;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-    }
-    .project-popup-close-btn-fixed:hover {
-      background: rgba(6, 182, 212, 0.2);
-      border-color: #06b6d4;
-      transform: scale(1.1);
-    }
-    .project-popup-content-fixed {
-      width: 100%;
-      max-width: min(500px, calc(100vw - 32px));
-      max-height: calc(100vh - 32px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      border-radius: 16px;
-      background: rgba(10, 10, 15, 0.95);
-      border: 1px solid rgba(6, 182, 212, 0.2);
-      box-shadow: 0 0 60px rgba(6, 182, 212, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5);
-      animation: contentSlideIn 0.25s ease-out;
-    }
-    .project-popup-content-fixed .project-popup-wrapper {
-      width: 100%;
-      max-width: 100%;
-      max-height: none;
-      overflow-y: visible;
-      padding: clamp(20px, 4vw, 32px);
-    }
-    .project-popup-content-fixed .project-title {
-      font-size: clamp(18px, 2.5vw, 24px);
-    }
-    .project-popup-content-fixed .project-badge {
-      font-size: clamp(11px, 1.5vw, 13px);
-      padding: 4px 10px;
-    }
-    .project-popup-content-fixed .project-stat-label {
-      font-size: clamp(11px, 1.5vw, 13px);
-    }
-    .project-popup-content-fixed .project-stat-value {
-      font-size: clamp(14px, 2vw, 16px);
-    }
-    .project-popup-content-fixed .project-metric-header {
-      font-size: clamp(11px, 1.5vw, 13px);
-    }
-    .project-popup-content-fixed .project-metric-value {
-      font-size: clamp(20px, 3vw, 28px);
-    }
-    .project-popup-content-fixed .project-popup-footer {
-      margin-top: clamp(16px, 3vw, 24px);
-      height: 4px;
-    }
-    .project-popup-content-fixed .project-footer-glow {
-      width: 80%;
-      opacity: 0.6;
-      filter: blur(3px);
-    }
-    .project-popup-content-fixed .project-corner-accent {
-      width: clamp(12px, 1.5vw, 16px);
-      height: clamp(12px, 1.5vw, 16px);
-      border-width: 2px;
-    }
-    .project-popup-content-fixed .project-popup-body {
-      padding: clamp(8px, 2vw, 16px) 0;
-    }
-    @media (max-width: 640px) {
-      .project-popup-overlay-fixed {
-        padding: 0;
-      }
-      .project-popup-content-fixed {
-        max-width: 100vw;
-        max-height: 100vh;
-        border-radius: 0;
-        border: none;
-      }
-      .project-popup-close-btn-fixed {
-        top: 12px;
-        right: 12px;
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
-      }
-    }
-    .project-popup-content-fixed::-webkit-scrollbar {
-      width: 8px;
-    }
-    .project-popup-content-fixed::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.4);
-    }
-    .project-popup-content-fixed::-webkit-scrollbar-thumb {
-      background: rgba(6, 182, 212, 0.5);
-      border-radius: 4px;
-    }
-    .project-popup-content-fixed::-webkit-scrollbar-thumb:hover {
-      background: rgba(6, 182, 212, 0.7);
     }
   `
   document.head.appendChild(style)

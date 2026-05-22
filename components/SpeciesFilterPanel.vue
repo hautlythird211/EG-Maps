@@ -179,7 +179,7 @@
     <!-- Filter Count with progress bar -->
     <div class="filter-count pt-2 border-t border-cyan-900/30">
       <div class="flex items-center justify-between mb-1.5">
-        <p class="text-[10px] font-heading font-semibold text-[var(--text-secondary)] tracking-wider">
+        <p class="text-[10px] font-heading font-semibold text-[var(--text-secondary)] tracking-wider" aria-live="polite" aria-atomic="true">
           {{ t('filter.showing', { count: filteredCount, total: totalCount }) }}
         </p>
         <span class="text-[10px] font-medium text-cyan-400">
@@ -370,9 +370,7 @@ defineExpose({
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-</style>
 
-<style scoped>
 .filter-search::placeholder {
   color: rgba(255, 255, 255, 0.5);
 }
