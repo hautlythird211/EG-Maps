@@ -16,7 +16,7 @@
             </div>
           </div>
 
-          <h1 class="text-[clamp(3rem,12vw,7rem)] font-black leading-[0.9] tracking-normal">
+          <h1 class="text-[clamp(2rem,5.5vw,4rem)] font-black leading-[1.1] tracking-normal">
             {{ t('home.title') }}
           </h1>
           <p class="mt-[clamp(1.25rem,3vw,1.75rem)] max-w-[min(100%,34rem)] text-[clamp(1rem,2.2vw,1.2rem)] leading-[1.65] text-black/70">

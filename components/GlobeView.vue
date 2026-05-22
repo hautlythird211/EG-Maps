@@ -92,10 +92,10 @@
     </div>
 
     <!-- Species legend (for endangered species) -->
-    <div v-if="activeDataset === 'endangered-species'" class="absolute left-4 bottom-20 sm:bottom-4 z-[600]">
-      <div class="panel-cyber rounded-lg p-3 transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+    <div v-if="activeDataset === 'endangered-species'" class="absolute right-[max(0.75rem,env(safe-area-inset-right))] sm:right-4 top-[clamp(19rem,28vh,19rem)] z-[600]">
+      <div class="taxonomic-group-bubble">
         <button @click="taxonomicGroupsCollapsed = !taxonomicGroupsCollapsed" class="flex items-center gap-1.5 w-full text-left mb-2">
-          <Icon :name="taxonomicGroupsCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" class="h-4 w-4 text-white/70 transition-transform" />
+          <Icon :name="taxonomicGroupsCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" class="h-4 w-4 text-[var(--text-secondary)] transition-transform" />
           <span class="text-xs font-bold text-[var(--text-primary)]">{{ t('globe.taxonomicGroups') }}</span>
         </button>
         <div v-if="!taxonomicGroupsCollapsed" class="grid grid-cols-2 gap-1.5 animate-fade-in">

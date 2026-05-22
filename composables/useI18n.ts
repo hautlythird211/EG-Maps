@@ -98,6 +98,7 @@ const translations: Record<Locale, Translation> = {
       moreGroups: '+{count} more',
       addGroup: 'Add group',
       removeGroup: 'Remove {group}',
+      close: 'Close',
     },
     stats: {
       title: '2024 Project Grants Impact',
@@ -291,6 +292,7 @@ const translations: Record<Locale, Translation> = {
       moreGroups: '+{count} más',
       addGroup: 'Agregar grupo',
       removeGroup: 'Quitar {group}',
+      close: 'Cerrar',
     },
     stats: {
       title: 'Impacto de subvenciones 2024',
@@ -484,6 +486,7 @@ const translations: Record<Locale, Translation> = {
       moreGroups: '+{count} mais',
       addGroup: 'Adicionar grupo',
       removeGroup: 'Remover {group}',
+      close: 'Fechar',
     },
     stats: {
       title: 'Impacto das subvenções 2024',
@@ -677,6 +680,7 @@ const translations: Record<Locale, Translation> = {
       moreGroups: '+{count} autres',
       addGroup: 'Ajouter un groupe',
       removeGroup: 'Retirer {group}',
+      close: 'Fermer',
     },
     stats: {
       title: 'Impact des subventions 2024',

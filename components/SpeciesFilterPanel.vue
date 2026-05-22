@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`fixed ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] max-w-full' : 'top-20 left-4 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 species-filter-panel transition-all duration-300`"
+    :class="`fixed ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] max-w-full' : 'top-20 right-16 w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 species-filter-panel transition-all duration-300`"
     :style="{ zIndex: '10001' }"
   >
     <!-- Header -->
@@ -195,6 +195,17 @@
       </div>
     </div>
     </div>
+
+    <!-- Close button -->
+    <div :class="isMobile ? 'mt-2' : 'mt-3'">
+      <button
+        class="w-full py-2 rounded text-xs font-medium transition-all duration-200 border border-cyan-900/50 text-gray-400 hover:text-white hover:border-cyan-500/50 hover:bg-cyan-500/10 flex items-center justify-center gap-1.5"
+        @click="emit('close')"
+      >
+        <iconify-icon icon="lucide:x" class="h-3.5 w-3.5" />
+        {{ t('filter.close') }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -215,6 +226,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'filter-change': [filteredSpecies: Species[]]
   'group-selection-change': [groups: string[]]
+  'close': []
 }>()
 
 const isMobile = useMediaQuery('(max-width: 768px)')
