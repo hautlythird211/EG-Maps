@@ -118,21 +118,25 @@ useHead({
 const speciesCount = ref(0)
 const taxonomicGroupCount = ref(0)
 
-if (import.meta.client) {
-  onMounted(async () => {
-    try {
-      const res = await fetch('/data/species/index.json')
-      if (res.ok) {
-        const index = await res.json()
-        const ds = index.datasets?.[0]
-        if (ds) {
-          speciesCount.value = ds.speciesCount ?? 0
-          taxonomicGroupCount.value = Object.keys(ds.taxonomicGroups ?? {}).length
+onMounted(async () => {
+  try {
+    const res = await fetch('/data/species/index.json')
+    if (res.ok) {
+      const index = await res.json()
+      const datasets = index.datasets ?? []
+      let total = 0
+      const allGroups = new Set<string>()
+      for (const ds of datasets) {
+        total += ds.speciesCount ?? 0
+        for (const grp of Object.keys(ds.taxonomicGroups ?? {})) {
+          allGroups.add(grp)
         }
       }
-    } catch {}
-  })
-}
+      speciesCount.value = total
+      taxonomicGroupCount.value = allGroups.size
+    }
+  } catch {}
+})
 
 const projectStats = computed(() => {
   const totalProjects = allProjectsData.length

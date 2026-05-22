@@ -1,6 +1,23 @@
 {
   "datasets": [
     {
+      "id": "iucn",
+      "name": "IUCN Red List",
+      "source": "IUCN - International Union for Conservation of Nature",
+      "url": "https://www.iucnredlist.org/",
+      "speciesCount": 200,
+      "taxonomicGroups": {
+        "Amphibian": 25,
+        "Bird": 31,
+        "Fish": 22,
+        "Invertebrate": 27,
+        "Mammal": 47,
+        "Plant": 25,
+        "Reptile": 23
+      },
+      "description": "Globally threatened species from the IUCN Red List of Threatened Species"
+    },
+    {
       "id": "icmbio-brazil",
       "name": "ICMBio Brazilian Red List",
       "source": "ICMBio - Chico Mendes Institute for Biodiversity Conservation",

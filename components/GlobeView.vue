@@ -170,11 +170,15 @@ import {
 } from '@/lib/map-effects'
 import {
   getMarkerImageUrl,
+  setupLazyMarkerImage,
+  cleanupLazyMarkerImage,
   preloadSpeciesImages,
   clearImageCache,
   getMarkerPlaceholder,
   getProjectPlaceholder,
 } from '@/lib/image-utils'
+import { useMapCluster } from '@/composables/useMapCluster'
+import type { ClusterPoint } from '@/composables/useMapCluster'
 
 const { t, locale } = useI18n()
 const baseURL = useRuntimeConfig().app.baseURL
@@ -237,6 +241,7 @@ let map: maplibregl.Map | null = null
 let markers: maplibregl.Marker[] = []
 let isMounted = true
 let pendingVisibilityUpdate = false
+let pendingClusterRebuild = false
 const speciesCloseBtnRef = ref<HTMLElement | null>(null)
 const projectCloseBtnRef = ref<HTMLElement | null>(null)
 let lastFocusedEl: HTMLElement | null = null
@@ -245,6 +250,10 @@ let particleSystem: MapParticleSystem | null = null
 let rotationAnimationId: number | null = null
 let isUserInteracting = false
 let interactionTimeout: ReturnType<typeof setTimeout> | null = null
+const clusterer = useMapCluster()
+let lastClusterZoom = -1
+let lastBboxCenter: { lng: number; lat: number } | null = null
+let clusterIdCounter = 0
 
 function openSpeciesOverlay(species: Species) {
   const localizedSpecies = getLocalizedSpecies(species)
@@ -411,7 +420,6 @@ async function initMap() {
     })
 
     map.on('move', () => {
-      // Throttle with RAF - only process visibility once per frame
       if (!pendingVisibilityUpdate) {
         pendingVisibilityUpdate = true
         requestAnimationFrame(() => {
@@ -419,10 +427,58 @@ async function initMap() {
           pendingVisibilityUpdate = false
         })
       }
+      if (!pendingClusterRebuild && map) {
+        let needsRebuild = false
+        const currentZoom = Math.floor(map.getZoom())
+        if (currentZoom !== lastClusterZoom) {
+          needsRebuild = true
+        } else {
+          const bounds = map.getBounds()
+          const center = map.getCenter()
+          const lngSpan = bounds.getEast() - bounds.getWest()
+          const latSpan = bounds.getNorth() - bounds.getSouth()
+          if (
+            !lastBboxCenter ||
+            Math.abs(center.lng - lastBboxCenter.lng) > lngSpan * 0.4 ||
+            Math.abs(center.lat - lastBboxCenter.lat) > latSpan * 0.4
+          ) {
+            needsRebuild = true
+          }
+        }
+        if (needsRebuild) {
+          pendingClusterRebuild = true
+          requestAnimationFrame(() => {
+            rebuildMarkers()
+            pendingClusterRebuild = false
+          })
+        }
+      }
     })
 
     map.on('moveend', () => {
       updateMarkerVisibility()
+      if (map) {
+        let needsRebuild = false
+        const currentZoom = Math.floor(map.getZoom())
+        if (currentZoom !== lastClusterZoom) {
+          needsRebuild = true
+        } else {
+          const bounds = map.getBounds()
+          const center = map.getCenter()
+          const lngSpan = bounds.getEast() - bounds.getWest()
+          const latSpan = bounds.getNorth() - bounds.getSouth()
+          if (
+            !lastBboxCenter ||
+            Math.abs(center.lng - lastBboxCenter.lng) > lngSpan * 0.4 ||
+            Math.abs(center.lat - lastBboxCenter.lat) > latSpan * 0.4
+          ) {
+            needsRebuild = true
+          }
+        }
+        if (needsRebuild) {
+          rebuildMarkers()
+        }
+      }
     })
 
     let errorCount = 0
@@ -452,6 +508,23 @@ async function initMap() {
     isLoading.value = false
     hasError.value = true
   }
+}
+
+function hashString(str: string): number {
+  let h = 0
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i)
+    h |= 0
+  }
+  return Math.abs(h)
+}
+
+function getBlobBorderRadius(size: number, seed: number): string {
+  const a = 44 + Math.sin(seed * 1.7 + size * 0.1) * 14
+  const b = 56 + Math.cos(seed * 2.3 + size * 0.15) * 14
+  const c = 48 + Math.sin(seed * 3.7 + size * 0.2) * 14
+  const d = 52 + Math.cos(seed * 5.1 + size * 0.25) * 14
+  return `${a}% ${b}% ${c}% ${d}% / ${b}% ${c}% ${d}% ${a}%`
 }
 
 function getUnifiedMarkerMetrics(options: {
@@ -488,10 +561,12 @@ function createUnifiedMarkerElement(metrics: ReturnType<typeof getUnifiedMarkerM
   el.style.pointerEvents = 'auto'
   el.style.zIndex = '10'
 
+  const blobRadius = getBlobBorderRadius(metrics.visualSize, hashString(metrics.group ?? metrics.color))
+
   const inner = document.createElement('div')
   inner.style.width = `${metrics.visualSize}px`
   inner.style.height = `${metrics.visualSize}px`
-  inner.style.borderRadius = '50%'
+  inner.style.borderRadius = blobRadius
   inner.style.backgroundColor = 'rgba(0, 0, 0, 0.82)'
   inner.style.border = '2px solid rgba(255, 255, 255, 0.86)'
   inner.style.boxShadow = `0 0 ${Math.max(8, metrics.visualSize * 0.5)}px ${metrics.color}, 0 0 1.5px #fff`
@@ -608,88 +683,226 @@ function startMarkerVisibilityCheck() {
   // RAF-based updates handle this during interaction
 }
 
+function createClusterMarkerElement(count: number, items: { lat: number; lng: number; type: string }[]) {
+  const uid = ++clusterIdCounter
+  const size = Math.max(42, 28 + count * 5)
+  const blobRadius = getBlobBorderRadius(size, count * 7 + size)
+
+  const outer = document.createElement('div')
+  outer.className = 'globe-marker-item'
+  outer.style.width = `${size + 18}px`
+  outer.style.height = `${size + 18}px`
+  outer.style.display = 'flex'
+  outer.style.justifyContent = 'center'
+  outer.style.alignItems = 'center'
+  outer.style.cursor = 'pointer'
+  outer.style.pointerEvents = 'auto'
+  outer.style.zIndex = '20'
+  outer.style.position = 'relative'
+
+  const blob = document.createElement('div')
+  blob.style.width = `${size}px`
+  blob.style.height = `${size}px`
+  blob.style.borderRadius = blobRadius
+  blob.style.background = `radial-gradient(circle at 35% 30%, rgba(6, 182, 212, 0.25), rgba(0, 0, 0, 0.92) 70%)`
+  blob.style.border = '2px solid rgba(6, 182, 212, 0.7)'
+  blob.style.boxShadow = `0 0 ${Math.max(10, size * 0.35)}px rgba(6, 182, 212, 0.35), 0 0 ${Math.max(4, size * 0.15)}px rgba(255, 255, 255, 0.3), inset 0 0 30px rgba(6, 182, 212, 0.08)`
+  blob.style.display = 'flex'
+  blob.style.flexDirection = 'column'
+  blob.style.justifyContent = 'center'
+  blob.style.alignItems = 'center'
+  blob.style.position = 'relative'
+  blob.style.overflow = 'hidden'
+  blob.style.transition = 'transform 200ms ease, box-shadow 200ms ease'
+  blob.style.transformOrigin = 'center center'
+  blob.style.transform = 'scale(1)'
+  blob.style.animation = `clusterPulse ${2.5 + (count % 3) * 0.5}s ease-in-out infinite`
+
+  const shine = document.createElement('div')
+  shine.style.position = 'absolute'
+  shine.style.top = '8%'
+  shine.style.left = '12%'
+  shine.style.width = '35%'
+  shine.style.height = '25%'
+  shine.style.borderRadius = '50%'
+  shine.style.background = 'radial-gradient(ellipse, rgba(255,255,255,0.18), transparent)'
+  shine.style.pointerEvents = 'none'
+  blob.appendChild(shine)
+
+  const countEl = document.createElement('span')
+  countEl.textContent = `${count}`
+  countEl.style.color = '#fff'
+  countEl.style.fontSize = `${Math.max(13, 16 - count)}px`
+  countEl.style.fontWeight = '800'
+  countEl.style.lineHeight = '1'
+  countEl.style.textShadow = '0 0 8px rgba(6, 182, 212, 0.9), 0 0 20px rgba(6, 182, 212, 0.4)'
+  countEl.style.position = 'relative'
+  countEl.style.zIndex = '1'
+  blob.appendChild(countEl)
+
+  const styleId = `gcluster-pulse-${uid}`
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style')
+    style.id = styleId
+    style.textContent = `
+      @keyframes clusterPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  outer.appendChild(blob)
+
+  outer.addEventListener('mouseenter', () => {
+    blob.style.animation = 'none'
+    blob.style.transform = 'scale(1.18)'
+    blob.style.boxShadow = `0 0 ${Math.max(18, size * 0.6)}px rgba(6, 182, 212, 0.6), 0 0 6px rgba(255, 255, 255, 0.5), inset 0 0 40px rgba(6, 182, 212, 0.12)`
+    outer.style.zIndex = '100'
+  })
+
+  outer.addEventListener('mouseleave', () => {
+    blob.style.animation = `clusterPulse ${2.5 + (count % 3) * 0.5}s ease-in-out infinite`
+    blob.style.transform = 'scale(1)'
+    blob.style.boxShadow = `0 0 ${Math.max(10, size * 0.35)}px rgba(6, 182, 212, 0.35), 0 0 ${Math.max(4, size * 0.15)}px rgba(255, 255, 255, 0.3), inset 0 0 30px rgba(6, 182, 212, 0.08)`
+    outer.style.zIndex = '20'
+  })
+
+  return outer
+}
+
 function rebuildMarkers() {
   if (!map) return
 
+  const currentZoom = map.getZoom()
+
   markers.forEach(m => m.remove())
   markers = []
-
-  // Translation objects for popups
-  const projectPopupTranslations = {
-    projectGrantee: t('stats.projectGrantees'),
-    directBeneficiaries: t('stats.directBeneficiaries'),
-    indirectBeneficiaries: t('stats.indirectBeneficiaries'),
-    location: t('project.location'),
-    status: t('project.status'),
-    unknownLocation: t('project.unknownLocation')
-  }
-  const speciesPopupTranslations = {
-    scientificName: t('species.scientificName'),
-    threatTypes: t('species.threatTypes'),
-    population: t('species.population'),
-    habitat: t('species.habitat'),
-    region: t('filter.region'),
-    ecosystem: t('filter.ecosystem'),
-    groupLabels: getTaxonomicGroupLabels()
-  }
+  clusterer.destroy()
 
   if (activeDataset.value === 'project-grants') {
     const data = isMobile.value
       ? projectsData.value.slice(0, 60)
       : projectsData.value
+    const validProjects = data.filter(p => isValidCoordinate(p.latitude, p.longitude))
 
-    data.forEach((project) => {
-      if (!isValidCoordinate(project.latitude, project.longitude)) return
+    const clusterItems = validProjects.map((p, i) => ({
+      lng: p.longitude,
+      lat: p.latitude,
+      type: 'project' as const,
+      index: i,
+    }))
 
-      const el = createProjectMarkerElement(project)
-      el.style.cursor = 'pointer'
-      el.setAttribute('tabindex', '0')
-      el.setAttribute('role', 'button')
-      el.setAttribute('aria-label', project.project_title)
-      el.addEventListener('click', () => {
-        openProjectOverlay(project)
-      })
-      el.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectOverlay(project) }
-      })
+    clusterer.load(clusterItems)
 
-      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-        .setLngLat([project.longitude, project.latitude])
-        .addTo(map!)
+    const bounds = map.getBounds()
+    const bbox: [number, number, number, number] = [
+      bounds.getWest(), bounds.getSouth(),
+      bounds.getEast(), bounds.getNorth(),
+    ]
+    const clusters = clusterer.getClusters(bbox, currentZoom)
 
-      markers.push(marker)
+    clusters.forEach((cp: ClusterPoint) => {
+      if (cp.type === 'cluster') {
+        const el = createClusterMarkerElement(cp.count, cp.items)
+        el.setAttribute('tabindex', '0')
+        el.setAttribute('role', 'button')
+        el.setAttribute('aria-label', `Cluster of ${cp.count} projects`)
+        el.addEventListener('click', () => {
+          if (map) {
+            const zoom = clusterer.getClusterExpansionZoom(cp.clusterId)
+            map.flyTo({ center: [cp.lng, cp.lat], zoom, duration: 400 })
+          }
+        })
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([cp.lng, cp.lat])
+          .addTo(map!)
+        markers.push(marker)
+      } else {
+        const project = validProjects[cp.sourceIndex]
+        if (!project) return
+        const el = createProjectMarkerElement(project)
+        el.style.cursor = 'pointer'
+        el.setAttribute('tabindex', '0')
+        el.setAttribute('role', 'button')
+        el.setAttribute('aria-label', project.project_title)
+        el.addEventListener('click', () => { openProjectOverlay(project) })
+        el.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectOverlay(project) }
+        })
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([project.longitude, project.latitude])
+          .addTo(map!)
+        markers.push(marker)
+      }
     })
   } else if (activeDataset.value === 'endangered-species' && speciesData.value.length) {
     const data = isMobile.value
       ? speciesData.value.slice(0, 80)
       : speciesData.value
-
     const speciesToRender = data.filter(s => isValidCoordinate(s.lat, s.lng))
     const imageUrls = speciesToRender.map(s => s.imageUrl).filter(Boolean)
     
     preloadSpeciesImages(imageUrls, true, baseURL)
 
-    speciesToRender.forEach((species) => {
-      const el = createSpeciesMarkerElement(species)
-      el.style.cursor = 'pointer'
-      el.setAttribute('tabindex', '0')
-      el.setAttribute('role', 'button')
-      el.setAttribute('aria-label', species.commonName)
-      el.addEventListener('click', () => {
-        openSpeciesOverlay(species)
-      })
-      el.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSpeciesOverlay(species) }
-      })
+    const clusterItems = speciesToRender.map((s, i) => ({
+      lng: s.lng,
+      lat: s.lat,
+      type: 'species' as const,
+      index: i,
+    }))
 
-      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-        .setLngLat([species.lng, species.lat])
-        .addTo(map!)
+    clusterer.load(clusterItems)
 
-      markers.push(marker)
+    const bounds = map.getBounds()
+    const bbox: [number, number, number, number] = [
+      bounds.getWest(), bounds.getSouth(),
+      bounds.getEast(), bounds.getNorth(),
+    ]
+    const clusters = clusterer.getClusters(bbox, currentZoom)
+
+    clusters.forEach((cp: ClusterPoint) => {
+      if (cp.type === 'cluster') {
+        const el = createClusterMarkerElement(cp.count, cp.items)
+        el.setAttribute('tabindex', '0')
+        el.setAttribute('role', 'button')
+        el.setAttribute('aria-label', `Cluster of ${cp.count} species`)
+        el.addEventListener('click', () => {
+          if (map) {
+            const zoom = clusterer.getClusterExpansionZoom(cp.clusterId)
+            map.flyTo({ center: [cp.lng, cp.lat], zoom, duration: 400 })
+          }
+        })
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([cp.lng, cp.lat])
+          .addTo(map!)
+        markers.push(marker)
+      } else {
+        const species = speciesToRender[cp.sourceIndex]
+        if (!species) return
+        const el = createSpeciesMarkerElement(species)
+        el.style.cursor = 'pointer'
+        el.setAttribute('tabindex', '0')
+        el.setAttribute('role', 'button')
+        el.setAttribute('aria-label', species.commonName)
+        el.addEventListener('click', () => { openSpeciesOverlay(species) })
+        el.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSpeciesOverlay(species) }
+        })
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([species.lng, species.lat])
+          .addTo(map!)
+        markers.push(marker)
+      }
     })
   }
 
+  lastClusterZoom = Math.floor(currentZoom)
+  if (map) {
+    const c = map.getCenter()
+    lastBboxCenter = { lng: c.lng, lat: c.lat }
+  }
   updateMarkerVisibility()
 }
 
@@ -864,6 +1077,7 @@ onUnmounted(() => {
   cleanupParticles()
   if (hexGridDebounceTimer) clearTimeout(hexGridDebounceTimer)
   markers.forEach(m => m.remove())
+  clusterer.destroy()
   clearImageCache()
   if (map) {
     map.remove()

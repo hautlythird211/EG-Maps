@@ -31,6 +31,9 @@ useHead({
   meta: [
     { name: 'description', content: 'Interactive 3D globe of critically endangered species around the world' },
   ],
+  link: [
+    { rel: 'preload', as: 'fetch', href: '/data/species/icmbio-brazil.json', crossorigin: 'anonymous' },
+  ],
 })
 
 const { data: speciesList, loading, error } = useSpeciesData()
