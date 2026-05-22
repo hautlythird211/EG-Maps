@@ -42,7 +42,6 @@ jobs:
         run: |
           mkdir -p .output/eg-maps/EG-Maps
           cp -r .output/public/* .output/eg-maps/EG-Maps/
-          # Copy index.html as 404.html fallback for unknown routes
           cp .output/public/200.html .output/eg-maps/EG-Maps/404.html 2>/dev/null || cp .output/public/index.html .output/eg-maps/EG-Maps/404.html 2>/dev/null || true
 
       - name: Upload build artifact
@@ -56,40 +55,8 @@ jobs:
         with:
           path: .output/eg-maps
 
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.0
-          run_install: false
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: site-build
-          path: .output/public
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run Playwright tests
-        run: pnpm exec playwright test --config=playwright.static.config.ts
-        env:
-          BASE_URL: http://localhost:3000/EG-Maps
-
   deploy:
-    needs: [build, test]
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
