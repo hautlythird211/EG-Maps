@@ -1,7 +1,7 @@
 <template>
   <div>
-    <!-- Main controls container -->
-    <div :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] right-[max(0.75rem,env(safe-area-inset-right))]' : 'top-20 right-4'} z-[700] flex flex-col gap-2 map-tool-stack`">
+    <!-- Main controls container - Mobile optimized -->
+    <div :class="`absolute ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] right-[max(0.5rem,env(safe-area-inset-right))]' : 'top-20 right-4'} z-[700] flex flex-col gap-1.5 xs:gap-2 map-tool-stack`">
       <!-- Search Button -->
       <UiTooltip :side="isMobile ? 'right' : 'left'">
         <template #trigger>
@@ -12,8 +12,8 @@
             @click="toggleSearch"
             :aria-label="t('mapControls.search')"
           >
-            <iconify-icon icon="lucide:search" class="h-5 w-5" />
-            <span v-if="recentSearches.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full" />
+            <iconify-icon icon="lucide:search" class="h-4 w-4 xs:h-5 xs:w-5" />
+            <span v-if="recentSearches.length > 0" class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-white rounded-full" />
           </UiButton>
         </template>
         <p>{{ dataset === 'project-grants' ? t('mapControls.searchProjects') : t('mapControls.searchSpecies') }} <span class="text-gray-500 ml-1">{{ t('mapControls.keyboardShortcut') }}</span></p>
@@ -29,7 +29,7 @@
             @click="toggleFilterPanel"
             :aria-label="filterOpen ? t('mapControls.hideFilters') : t('mapControls.showFilters')"
           >
-            <iconify-icon icon="lucide:sliders-horizontal" class="h-5 w-5" />
+            <iconify-icon icon="lucide:sliders-horizontal" class="h-4 w-4 xs:h-5 xs:w-5" />
           </UiButton>
         </template>
         <p>{{ filterOpen ? t('mapControls.hideFilters') : t('mapControls.showFilters') }}</p>
@@ -45,7 +45,7 @@
             @click="emit('toggle-connections')"
             :aria-label="showConnections ? t('mapControls.hideConnections') : t('mapControls.showConnections')"
           >
-            <iconify-icon :icon="showConnections ? 'lucide:route' : 'lucide:unlink-2'" class="h-5 w-5" />
+            <iconify-icon :icon="showConnections ? 'lucide:route' : 'lucide:unlink-2'" class="h-4 w-4 xs:h-5 xs:w-5" />
           </UiButton>
         </template>
         <p>{{ showConnections ? t('mapControls.hideConnections') : t('mapControls.showConnections') }}</p>
@@ -61,8 +61,8 @@
             @click="emit('toggle-hex-grid')"
             :aria-label="showHexGrid ? t('mapControls.hideHexGrid') : t('mapControls.showHexGrid')"
           >
-            <iconify-icon v-if="showHexGrid" icon="lucide:grid-3x3" class="h-5 w-5" />
-            <iconify-icon v-else icon="lucide:layers" class="h-5 w-5" />
+            <iconify-icon v-if="showHexGrid" icon="lucide:grid-3x3" class="h-4 w-4 xs:h-5 xs:w-5" />
+            <iconify-icon v-else icon="lucide:layers" class="h-4 w-4 xs:h-5 xs:w-5" />
           </UiButton>
         </template>
         <p>{{ showHexGrid ? t('mapControls.hideHexGrid') : t('mapControls.showHexGrid') }}</p>
@@ -78,8 +78,8 @@
             @click="toggleFullscreen"
             :aria-label="fullscreen ? t('mapControls.exitFullscreen') : t('mapControls.enterFullscreen')"
           >
-            <iconify-icon v-if="fullscreen" icon="lucide:minimize-2" class="h-5 w-5" />
-            <iconify-icon v-else icon="lucide:maximize-2" class="h-5 w-5" />
+            <iconify-icon v-if="fullscreen" icon="lucide:minimize-2" class="h-4 w-4 xs:h-5 xs:w-5" />
+            <iconify-icon v-else icon="lucide:maximize-2" class="h-4 w-4 xs:h-5 xs:w-5" />
           </UiButton>
         </template>
         <p>{{ fullscreen ? t('mapControls.exitFullscreen') : t('mapControls.enterFullscreen') }}</p>
@@ -90,13 +90,13 @@
     <Transition name="search-panel">
       <div 
         v-if="showSearch" 
-        :class="`absolute ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)] max-h-[calc(100svh-11rem)]' : 'top-20 right-16 w-[min(20rem,calc(100vw-5rem))] max-h-[calc(100svh-8rem)]'} z-[700] panel-cyber p-3 overflow-hidden`"
+        :class="`absolute ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] max-w-full max-h-[calc(100svh-10rem)]' : 'top-20 right-16 w-[min(20rem,calc(100vw-5rem))] max-h-[calc(100svh-8rem)]'} z-[700] panel-cyber p-2.5 xs:p-3 overflow-hidden`"
         role="dialog"
         :aria-label="t('mapControls.search')"
       >
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-sm font-bold text-[var(--tool-btn-text)] flex items-center gap-2">
-            <iconify-icon icon="lucide:search" class="h-4 w-4" />
+        <div class="flex justify-between items-center mb-2 xs:mb-3">
+          <h3 class="text-xs xs:text-sm font-bold text-[var(--tool-btn-text)] flex items-center gap-1.5 xs:gap-2">
+            <iconify-icon icon="lucide:search" class="h-3.5 w-3.5 xs:h-4 xs:w-4" />
             {{ dataset === 'project-grants' ? t('mapControls.searchProjects') : t('mapControls.searchSpecies') }}
           </h3>
           <div class="flex items-center gap-1">

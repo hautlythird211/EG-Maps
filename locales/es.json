@@ -13,6 +13,9 @@
   "home": {
     "title": "Earth Guardians",
     "subtitle": "Plataforma interactiva de visualización de datos",
+    "dataMaps": "Mapas de datos",
+    "2d": "2D",
+    "3d": "3D",
     "projectGrantsTitle": "Subvenciones",
     "projectGrantsDesc": "Explora iniciativas globales de financiación y su impacto en comunidades de todo el mundo.",
     "speciesTitle": "Especies en peligro",

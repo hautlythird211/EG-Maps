@@ -15,6 +15,35 @@ const translationCache = new Map<Locale, Translation>()
 const failedLocales = new Set<Locale>()
 translationCache.set('en', enTranslations as Translation)
 
+// Deep merge function for fallback
+function deepGet(obj: Translation | undefined, path: string[]): string | undefined {
+  if (!obj) return undefined
+  let current: string | Translation = obj
+  for (const part of path) {
+    if (current === undefined || current === null || typeof current !== 'object') return undefined
+    current = (current as Translation)[part]
+  }
+  return typeof current === 'string' ? current : undefined
+}
+
+// Get translation with deep fallback (locale -> en -> key)
+function getTranslation(locale: Locale, key: string, fallbackToKey = true): string {
+  const path = key.split('.')
+
+  // Try current locale first
+  const localeValue = deepGet(translationCache.get(locale), path)
+  if (localeValue !== undefined) return localeValue
+
+  // Fallback to English if not current locale
+  if (locale !== 'en') {
+    const enValue = deepGet(enTranslations as Translation, path)
+    if (enValue !== undefined) return enValue
+  }
+
+  // Return key as last resort (or undefined for debugging)
+  return fallbackToKey ? key : undefined
+}
+
 function detectLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
 
@@ -47,15 +76,11 @@ async function loadLocale(locale: Locale, baseURL?: string): Promise<Translation
   return data
 }
 
+// Legacy lookup function for compatibility
 function lookup(locale: Locale, key: string): string | undefined {
   const translations = translationCache.get(locale)
   if (!translations) return undefined
-  let value: string | Translation | undefined = translations
-  for (const part of key.split('.')) {
-    if (!value || typeof value === 'string') return undefined
-    value = value[part]
-  }
-  return typeof value === 'string' ? value : undefined
+  return deepGet(translations, key.split('.'))
 }
 
 function interpolate(template: string, args: unknown[]): string {
@@ -95,7 +120,8 @@ export function useI18n() {
   }
 
   function t(key: string, ...args: unknown[]): string {
-    const value = lookup(localeState.value, key) ?? lookup('en', key) ?? key
+    // Use new getTranslation for proper fallback chain: locale -> en -> key
+    const value = getTranslation(localeState.value, key, true)
     return interpolate(value, args)
   }
 

@@ -3,7 +3,7 @@
     <slot />
 
     <!-- Unified Top Header - 2D/3D + Utilities + Theme -->
-    <header v-if="showUnifiedHeader" class="fixed left-4 top-[clamp(5rem,16vw,6rem)] z-[10000] sm:left-auto sm:right-[max(2rem,env(safe-area-inset-right))] sm:top-[0.5rem]">
+    <header v-if="showUnifiedHeader" class="fixed left-2 xs:left-4 top-[clamp(4.5rem,14vw,6rem)] z-[10000] sm:left-auto sm:right-[max(1rem,env(safe-area-inset-right))] sm:top-[0.5rem]">
       <div :class="unifiedHeaderShellClass">
         <!-- Left: 2D/3D Toggle -->
         <div v-if="showViewToggle" class="map-view-switcher flex flex-col sm:flex-row items-start sm:items-center gap-0.5">
@@ -14,7 +14,7 @@
               !is3DRoute ? 'map-view-tab-active' : 'map-view-tab-idle'
             ]"
           >
-            <Icon name="lucide:map" class="h-3.5 w-3.5" />
+            <Icon name="lucide:map" class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span class="hidden sm:inline text-xs">{{ t('globe.view2D') }}</span>
           </NuxtLink>
           <NuxtLink
@@ -24,7 +24,7 @@
               is3DRoute ? 'map-view-tab-active' : 'map-view-tab-idle'
             ]"
           >
-            <Icon name="lucide:globe" class="h-3.5 w-3.5" />
+            <Icon name="lucide:globe" class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span class="hidden sm:inline text-xs">{{ t('globe.view3D') }}</span>
           </NuxtLink>
         </div>
@@ -40,7 +40,7 @@
             :to="item.path"
             :class="getHeaderItemClass(item.path)"
           >
-            <Icon :name="item.icon" class="h-3.5 w-3.5" />
+            <Icon :name="item.icon" class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span class="hidden sm:inline text-xs">{{ t(item.labelKey) }}</span>
           </NuxtLink>
           <a
@@ -49,7 +49,7 @@
             rel="noopener noreferrer"
             :class="headerUtilityClass"
           >
-            <Icon name="lucide:users" class="h-3.5 w-3.5" />
+            <Icon name="lucide:users" class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span class="hidden sm:inline text-xs">{{ t('nav.crews') }}</span>
           </a>
 
@@ -62,14 +62,14 @@
             :class="headerUtilityClass"
             :aria-label="isDark ? t('nav.switchToLight') : t('nav.switchToDark')"
           >
-            <Icon :name="isDark ? 'lucide:sun' : 'lucide:moon'" class="h-3.5 w-3.5" />
+            <Icon :name="isDark ? 'lucide:sun' : 'lucide:moon'" class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           </button>
         </div>
       </div>
     </header>
 
     <!-- Map-focused Dock Navigation -->
-    <nav class="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[9999] max-w-[calc(100vw-1.5rem)] -translate-x-1/2">
+    <nav class="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] xs:bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[9999] max-w-[calc(100vw-1rem)] xs:max-w-[calc(100vw-1.5rem)] -translate-x-1/2">
       <div :class="dockShellClass">
         <div class="flex items-end gap-1" ref="dockRef">
           <template v-for="(item, index) in navItems" :key="item.path || item.external">
