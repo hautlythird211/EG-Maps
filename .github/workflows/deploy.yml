@@ -41,6 +41,9 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      - name: Build species icon mapping (Game Icons SSG)
+        run: node scripts/build-species-icon-mapping.mjs
+
       - name: Build static site
         run: pnpm generate
         env:
