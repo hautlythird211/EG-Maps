@@ -13,6 +13,9 @@
   "home": {
     "title": "Earth Guardians",
     "subtitle": "Interactive Data Visualization Platform",
+    "dataMaps": "Data maps",
+    "2d": "2D",
+    "3d": "3D",
     "projectGrantsTitle": "Project Grants",
     "projectGrantsDesc": "Explore global grant initiatives and their impact on communities worldwide.",
     "speciesTitle": "Endangered Species",

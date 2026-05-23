@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="`fixed ${isMobile ? 'top-[clamp(6.75rem,14vh,8.5rem)] left-[max(0.75rem,env(safe-area-inset-left))] right-[calc(max(0.75rem,env(safe-area-inset-right))_+_3.5rem)]' : 'top-20 right-[calc(1rem+3.5rem)] w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-3 project-filter-panel transition-all duration-300`"
+    :class="`fixed ${isMobile ? 'top-[clamp(5.5rem,12vh,7.5rem)] left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] max-w-full' : 'top-20 right-[calc(1rem+3.5rem)] w-[min(21.25rem,calc(100vw-5rem))]'} panel-cyber map-filter-panel rounded-lg p-2.5 xs:p-3 project-filter-panel transition-all duration-300`"
     :style="{ zIndex: '10001' }"
   >
     <!-- Header -->

@@ -3,13 +3,13 @@
     <!-- Loading skeleton -->
     <Transition name="fade">
       <div v-if="isLoading" class="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
-        <div class="relative mb-6">
-          <div class="w-20 h-20 rounded-full border-4 border-white/20 border-t-white animate-spin" />
-          <div class="absolute inset-0 w-20 h-20 rounded-full border-4 border-white/10 border-b-white/50 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
+        <div class="relative mb-5 xs:mb-6">
+          <div class="w-16 xs:w-20 h-16 xs:h-20 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+          <div class="absolute inset-0 w-16 xs:w-20 h-16 xs:h-20 rounded-full border-4 border-white/10 border-b-white/50 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
         </div>
-        <p class="text-white font-medium mb-2">{{ t('general.loading') }}</p>
-        <p class="text-gray-500 text-sm">{{ t('globe.preparingData', { dataset: activeDataset === 'project-grants' ? t('home.projectGrants').toLowerCase() : t('home.species').toLowerCase() }) }}</p>
-        <div class="mt-4 flex gap-1">
+        <p class="text-white font-medium mb-1.5 xs:mb-2 text-sm xs:text-base">{{ t('general.loading') }}</p>
+        <p class="text-gray-500 text-xs xs:text-sm">{{ t('globe.preparingData', { dataset: activeDataset === 'project-grants' ? t('home.projectGrants').toLowerCase() : t('home.species').toLowerCase() }) }}</p>
+        <div class="mt-3 xs:mt-4 flex gap-1">
           <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 0ms" />
           <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 150ms" />
           <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 300ms" />
@@ -67,9 +67,9 @@
       </div>
     </div>
 
-    <!-- Earth Guardians Banner -->
-    <div v-if="isMobile" class="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none px-2" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[240px] object-contain" loading="lazy" />
+    <!-- Earth Guardians Banner - Mobile optimized -->
+    <div v-if="isMobile" class="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none px-2 sm:px-3" :style="{ zIndex: 'var(--z-map-banner)' }">
+      <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[10vh] xs:max-h-[12vh] max-w-[180px] xs:max-w-[240px] object-contain" loading="lazy" />
     </div>
     <div v-else class="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block" :style="{ zIndex: 'var(--z-map-banner)' }">
       <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[15vh] max-w-[180px] -rotate-90 origin-center" loading="lazy" />
@@ -78,8 +78,8 @@
     <!-- Map Container -->
     <div ref="mapContainerRef" class="absolute inset-0 w-full h-full" />
 
-    <!-- Global Stats (for project grants only) -->
-    <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-24 w-full max-w-xl px-3 sm:bottom-4 sm:px-4 lg:px-0" :style="{ zIndex: 'var(--z-map-global-stats)' }">
+    <!-- Global Stats (for project grants only) - Mobile optimized -->
+    <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-24 xs:bottom-28 sm:bottom-4 w-full max-w-[calc(100vw-1rem)] xs:max-w-xl px-2 xs:px-3 sm:px-4 lg:px-0" :style="{ zIndex: 'var(--z-map-global-stats)' }">
       <GlobalStats :projects="visibleProjects" @close="() => {}" />
     </div>
 
@@ -100,23 +100,23 @@
       @close="showFilterPanel = false"
     />
 
-    <!-- Species legend (for endangered species) -->
-    <div v-if="activeDataset === 'endangered-species'" class="absolute right-[max(0.75rem,env(safe-area-inset-right))] sm:right-4 top-[clamp(22rem,32vh,22rem)]" :style="{ zIndex: 'var(--z-map-global-stats)' }">
+    <!-- Species legend (for endangered species) - Mobile optimized -->
+    <div v-if="activeDataset === 'endangered-species'" class="absolute right-[max(0.5rem,env(safe-area-inset-right))] sm:right-4 top-[clamp(16rem,40vh,22rem)] xs:top-[clamp(18rem,42vh,24rem)]" :style="{ zIndex: 'var(--z-map-global-stats)' }">
       <div class="taxonomic-group-bubble">
-        <button @click="taxonomicGroupsCollapsed = !taxonomicGroupsCollapsed" class="flex items-center gap-1.5 w-full text-left mb-2">
-          <iconify-icon :icon="taxonomicGroupsCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" class="h-4 w-4 text-[var(--text-secondary)] transition-transform" />
-          <span class="text-xs font-bold text-[var(--text-primary)]">{{ t('globe.taxonomicGroups') }}</span>
+        <button @click="taxonomicGroupsCollapsed = !taxonomicGroupsCollapsed" class="flex items-center gap-1.5 w-full text-left mb-1.5 xs:mb-2">
+          <iconify-icon :icon="taxonomicGroupsCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" class="h-3.5 w-3.5 xs:h-4 xs:w-4 text-[var(--text-secondary)] transition-transform" />
+          <span class="text-[10px] xs:text-xs font-bold text-[var(--text-primary)]">{{ t('globe.taxonomicGroups') }}</span>
         </button>
-        <div v-if="!taxonomicGroupsCollapsed" class="grid grid-cols-2 gap-1.5 animate-fade-in">
+        <div v-if="!taxonomicGroupsCollapsed" class="grid grid-cols-2 gap-1 xs:gap-1.5 animate-fade-in">
           <button
             v-for="(color, group) in GROUP_COLORS"
             :key="group"
-            class="flex items-center gap-1.5 group cursor-pointer rounded px-1 py-0.5 text-left transition-colors hover:bg-cyan-500/10"
+            class="flex items-center gap-1 xs:gap-1.5 group cursor-pointer rounded px-0.5 xs:px-1 py-0.5 text-left transition-colors hover:bg-cyan-500/10"
             :class="selectedSpeciesGroups.includes(group) ? 'bg-cyan-500/15' : ''"
             @click="toggleLegendGroup(group)"
           >
-            <div class="w-2.5 h-2.5 rounded-full transition-transform duration-200 group-hover:scale-125" :style="{ backgroundColor: color }" />
-            <span class="text-[10px] text-[var(--text-secondary)] group-hover:text-cyan-400 transition-colors">{{ taxonomicGroupLabel(group) }}</span>
+            <div class="w-2 h-2 xs:w-2.5 xs:h-2.5 rounded-full transition-transform duration-200 group-hover:scale-125" :style="{ backgroundColor: color }" />
+            <span class="text-[9px] xs:text-[10px] text-[var(--text-secondary)] group-hover:text-cyan-400 transition-colors">{{ taxonomicGroupLabel(group) }}</span>
           </button>
         </div>
       </div>

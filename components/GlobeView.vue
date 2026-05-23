@@ -3,16 +3,16 @@
     <!-- Loading skeleton -->
     <Transition name="fade">
       <div v-if="isLoading" class="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
-        <div class="relative mb-6">
-          <div class="w-20 h-20 rounded-full border-4 border-white/20 border-t-white animate-spin" />
-          <div class="absolute inset-0 w-20 h-20 rounded-full border-4 border-white/10 border-b-white/50 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
+        <div class="relative mb-5 xs:mb-6">
+          <div class="w-16 xs:w-20 h-16 xs:h-20 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+          <div class="absolute inset-0 w-16 xs:w-20 h-16 xs:h-20 rounded-full border-4 border-white/10 border-b-white/50 animate-spin" style="animation-delay: 0.5s; animation-direction: reverse" />
           <div class="absolute inset-0 flex items-center justify-center">
-            <Icon name="lucide:globe" class="w-8 h-8 text-white/70 animate-pulse" />
+            <Icon name="lucide:globe" class="w-7 h-7 xs:w-8 xs:h-8 text-white/70 animate-pulse" />
           </div>
         </div>
-        <p class="text-white font-medium mb-2">{{ t('globe.loading') }}</p>
-        <p class="text-gray-500 text-sm">{{ t('globe.preparingData', { dataset: activeDataset === 'project-grants' ? t('home.projectGrants').toLowerCase() : t('home.species').toLowerCase() }) }}</p>
-        <div class="mt-4 flex gap-1">
+        <p class="text-white font-medium mb-1.5 xs:mb-2 text-sm xs:text-base">{{ t('globe.loading') }}</p>
+        <p class="text-gray-500 text-xs xs:text-sm">{{ t('globe.preparingData', { dataset: activeDataset === 'project-grants' ? t('home.projectGrants').toLowerCase() : t('home.species').toLowerCase() }) }}</p>
+        <div class="mt-3 xs:mt-4 flex gap-1">
           <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 0ms" />
           <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 150ms" />
           <div class="w-2 h-2 rounded-full bg-white/50 animate-bounce" style="animation-delay: 300ms" />
@@ -78,30 +78,30 @@
     <!-- Map container -->
     <div ref="containerRef" class="w-full h-full" />
 
-    <!-- White Banner -->
-    <div v-if="isMobile" class="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none px-2" :style="{ zIndex: 'var(--z-map-banner)' }">
-      <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[12vh] max-w-[240px] object-contain" loading="lazy" />
+    <!-- White Banner - Mobile optimized -->
+    <div v-if="isMobile" class="absolute top-2 xs:top-3 left-1/2 -translate-x-1/2 pointer-events-none px-2" :style="{ zIndex: 'var(--z-map-banner)' }">
+      <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[10vh] xs:max-h-[12vh] max-w-[180px] xs:max-w-[240px] object-contain" loading="lazy" />
     </div>
     <div v-else class="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block" :style="{ zIndex: 'var(--z-map-banner)' }">
       <img :src="`${baseURL}white-banner.png`" alt="Earth Guardians" class="h-auto w-auto max-h-[15vh] max-w-[180px] -rotate-90 origin-center" loading="lazy" />
     </div>
 
-    <!-- Global Stats (only shown for project grants) -->
-    <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-0 z-[1000] w-full max-w-xl px-4 sm:px-0">
+    <!-- Global Stats (only shown for project grants) - Mobile optimized -->
+    <div v-if="activeDataset === 'project-grants'" class="absolute right-0 bottom-0 z-[1000] w-full max-w-[calc(100vw-1rem)] xs:max-w-xl px-2 xs:px-4 sm:px-0">
       <GlobalStats :projects="projectsData" @close="() => {}" />
     </div>
 
-    <!-- Species legend (for endangered species) -->
-    <div v-if="activeDataset === 'endangered-species'" class="absolute right-[max(0.75rem,env(safe-area-inset-right))] sm:right-4 top-[clamp(19rem,28vh,19rem)] z-[600]">
+    <!-- Species legend (for endangered species) - Mobile optimized -->
+    <div v-if="activeDataset === 'endangered-species'" class="absolute right-[max(0.5rem,env(safe-area-inset-right))] sm:right-4 top-[clamp(14rem,35vh,19rem)] xs:top-[clamp(16rem,38vh,22rem)] z-[600]">
       <div class="taxonomic-group-bubble">
-        <button @click="taxonomicGroupsCollapsed = !taxonomicGroupsCollapsed" class="flex items-center gap-1.5 w-full text-left mb-2">
-          <Icon :name="taxonomicGroupsCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" class="h-4 w-4 text-[var(--text-secondary)] transition-transform" />
-          <span class="text-xs font-bold text-[var(--text-primary)]">{{ t('globe.taxonomicGroups') }}</span>
+        <button @click="taxonomicGroupsCollapsed = !taxonomicGroupsCollapsed" class="flex items-center gap-1.5 w-full text-left mb-1.5 xs:mb-2">
+          <Icon :name="taxonomicGroupsCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" class="h-3.5 w-3.5 xs:h-4 xs:w-4 text-[var(--text-secondary)] transition-transform" />
+          <span class="text-[10px] xs:text-xs font-bold text-[var(--text-primary)]">{{ t('globe.taxonomicGroups') }}</span>
         </button>
-        <div v-if="!taxonomicGroupsCollapsed" class="grid grid-cols-2 gap-1.5 animate-fade-in">
-          <div v-for="(color, group) in GROUP_COLORS" :key="group" class="flex items-center gap-1.5 group cursor-pointer">
-            <div class="w-2.5 h-2.5 rounded-full transition-transform duration-200 group-hover:scale-125" :style="{ backgroundColor: color }" />
-            <span class="text-[10px] text-[var(--text-secondary)] group-hover:text-cyan-400 transition-colors">{{ group }}</span>
+        <div v-if="!taxonomicGroupsCollapsed" class="grid grid-cols-2 gap-1 xs:gap-1.5 animate-fade-in">
+          <div v-for="(color, group) in GROUP_COLORS" :key="group" class="flex items-center gap-1 xs:gap-1.5 group cursor-pointer">
+            <div class="w-2 h-2 xs:w-2.5 xs:h-2.5 rounded-full transition-transform duration-200 group-hover:scale-125" :style="{ backgroundColor: color }" />
+            <span class="text-[9px] xs:text-[10px] text-[var(--text-secondary)] group-hover:text-cyan-400 transition-colors">{{ group }}</span>
           </div>
         </div>
       </div>
@@ -124,13 +124,13 @@
     <!-- Error state -->
     <Transition name="fade">
       <div v-if="hasError" class="absolute inset-0 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center text-white z-[2000]">
-        <div class="relative mb-6">
-          <div class="w-16 h-16 rounded-full bg-[var(--text-primary)]/10 animate-pulse" />
-          <Icon name="lucide:alert-triangle" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-[var(--text-primary)]" />
+        <div class="relative mb-5 xs:mb-6">
+          <div class="w-14 h-14 xs:w-16 xs:h-16 rounded-full bg-[var(--text-primary)]/10 animate-pulse" />
+          <Icon name="lucide:alert-triangle" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-7 w-7 xs:h-8 xs:w-8 text-[var(--text-primary)]" />
         </div>
-        <h2 class="text-xl font-bold mb-2">{{ t('globe.unableToLoad') }}</h2>
-        <p class="text-gray-400 mb-4 text-center px-4 max-w-md">{{ t('globe.connectionError') }}</p>
-        <button @click="() => { hasError = false; initMap() }" class="px-6 py-2.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg font-medium hover:opacity-80 transition-all duration-300 flex items-center gap-2">
+        <h2 class="text-lg xs:text-xl font-bold mb-1.5 xs:mb-2">{{ t('globe.unableToLoad') }}</h2>
+        <p class="text-gray-400 mb-4 text-center px-4 xs:px-4 max-w-xs xs:max-w-md text-sm xs:text-base">{{ t('globe.connectionError') }}</p>
+        <button @click="() => { hasError = false; initMap() }" class="px-5 xs:px-6 py-2 xs:py-2.5 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-lg font-medium hover:opacity-80 transition-all duration-300 flex items-center gap-2 text-sm xs:text-base">
           <Icon name="lucide:refresh-cw" class="h-4 w-4" />
           {{ t('globe.tryAgain') }}
         </button>
