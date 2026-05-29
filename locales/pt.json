@@ -210,5 +210,29 @@
     "somethingWrong": "Algo deu errado",
     "goHome": "Voltar ao início",
     "tryAgain": "Tentar novamente"
+  },
+  "pwa": {
+    "installTitle": "Instalar Earth Guardians Maps",
+    "installDesc": "Instale nosso aplicativo para uma melhor experiência. Acesse mapas offline e tenha carregamento mais rápido.",
+    "installDescManual": "Adicione Earth Guardians Maps à sua tela inicial para a melhor experiência. Procure por \"Adicionar à tela inicial\" no menu do seu navegador.",
+    "install": "Instalar App",
+    "notNow": "Agora não",
+    "dontShowWeek": "Não mostrar esta semana",
+    "offlineReady": "Agora você pode usar o aplicativo offline",
+    "updateAvailable": "Uma nova versão está disponível. Atualize para obter as últimas mudanças."
+  },
+  "offline": {
+    "title": "Cache offline",
+    "downloadShort": "Baixar Mapas",
+    "download": "Baixar Tudo",
+    "cancel": "Cancelar",
+    "ready": "Pronto offline ✓",
+    "redownload": "Limpar e baixar novamente todos os dados",
+    "statusIdle": "Pronto para baixar para uso offline",
+    "statusChecking": "Verificando dados em cache...",
+    "statusDownloading": "Baixando...",
+    "statusCompleted": "Todos os dados disponíveis offline ✓",
+    "statusError": "Falha ao baixar",
+    "cached": "EM CACHE"
   }
 }

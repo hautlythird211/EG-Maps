@@ -650,207 +650,80 @@ function createClusterMarkerElement(
   outer.style.position = 'relative'
   outer.title = `${count} items`
 
-  if (items.length <= MAX_CLUSTER_SIZE) {
-    const miniSize = items.length <= 3 ? 24 : 20
-    const containerSize = items.length <= 2 ? 48 : items.length <= 4 ? 58 : 66
-    const orbitRadius = items.length <= 2 ? 10 : items.length <= 4 ? 14 : 17
+  const isLarge = items.length > MAX_CLUSTER_SIZE
+  const miniSize = items.length <= 2 ? 24 : items.length <= 4 ? 18 : isLarge ? 14 : 16
+  const gap = isLarge ? 2 : 3
+  const pad = isLarge ? 6 : 9
+  const cols = isLarge ? 4 : Math.min(items.length, 3)
+  const displayRows = isLarge ? Math.ceil(Math.min(items.length, 12) / cols) : Math.ceil(items.length / cols)
+  const gridW = cols * (miniSize + gap) - gap + pad * 2
+  const gridH = displayRows * (miniSize + gap) - gap + pad * 2
 
-    outer.style.width = `${containerSize}px`
-    outer.style.height = `${containerSize}px`
-    outer.style.display = 'flex'
-    outer.style.justifyContent = 'center'
-    outer.style.alignItems = 'center'
+  outer.style.width = `${gridW}px`
+  outer.style.height = `${gridH}px`
 
-    const clusterInner = document.createElement('div')
-    clusterInner.style.position = 'relative'
-    clusterInner.style.width = `${containerSize}px`
-    clusterInner.style.height = `${containerSize}px`
-    clusterInner.style.display = 'flex'
-    clusterInner.style.justifyContent = 'center'
-    clusterInner.style.alignItems = 'center'
+  const container = document.createElement('div')
+  container.style.display = 'flex'
+  container.style.flexWrap = 'wrap'
+  container.style.alignContent = 'center'
+  container.style.justifyContent = 'center'
+  container.style.gap = `${gap}px`
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.padding = `${pad}px`
+  container.style.boxSizing = 'border-box'
+  container.style.borderRadius = '14px'
+  container.style.background = `radial-gradient(circle at 30% 25%, rgba(${dr},${dg},${db},0.12), rgba(0,0,0,0.92) 75%)`
+  container.style.backdropFilter = 'blur(8px)'
+  container.style.border = `1.5px solid ${dominant}`
+  container.style.boxShadow = `0 0 12px rgba(${dr},${dg},${db},0.2), inset 0 0 16px rgba(0,0,0,0.15)`
+  container.style.transition = 'transform 200ms ease, box-shadow 200ms ease'
+  container.style.transformOrigin = 'center center'
 
-    const ringOuterR = (containerSize + 6) / 2
-    const ringInnerR = ringOuterR - 1.5
-    const rainbowRing = document.createElement('div')
-    rainbowRing.className = 'cluster-rainbow-ring'
-    rainbowRing.style.position = 'absolute'
-    rainbowRing.style.inset = '-3px'
-    rainbowRing.style.borderRadius = '50%'
-    rainbowRing.style.background = 'conic-gradient(from var(--a, 0deg), #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b59b6, #ff6b6b)'
-    rainbowRing.style.mask = `radial-gradient(farthest-side, transparent ${ringInnerR}px, #000 ${ringOuterR}px)`
-    rainbowRing.style.webkitMask = `radial-gradient(farthest-side, transparent ${ringInnerR}px, #000 ${ringOuterR}px)`
-    rainbowRing.style.pointerEvents = 'none'
-    clusterInner.appendChild(rainbowRing)
+  const maxShow = isLarge ? cols * displayRows - 1 : items.length
+  resolved.slice(0, maxShow).forEach(({ url, color: itemColor }) => {
+    const mini = document.createElement('div')
+    mini.style.width = `${miniSize}px`
+    mini.style.height = `${miniSize}px`
+    mini.style.borderRadius = '50%'
+    mini.style.background = `url("${url}") center/cover`
+    mini.style.border = `1.5px solid ${itemColor}`
+    mini.style.boxShadow = `0 0 6px ${itemColor}, 0 0 1px rgba(255,255,255,0.3)`
+    mini.style.flexShrink = '0'
+    container.appendChild(mini)
+  })
 
-    const bgBlob = document.createElement('div')
-    bgBlob.style.position = 'absolute'
-    bgBlob.style.inset = '-2px'
-    bgBlob.style.borderRadius = '50%'
-    bgBlob.style.background = `radial-gradient(circle at 30% 25%, rgba(${dr},${dg},${db},0.18), rgba(0,0,0,0.9) 75%)`
-    bgBlob.style.backdropFilter = 'blur(8px)'
-    bgBlob.style.boxShadow = `0 0 12px rgba(${dr},${dg},${db},0.25), inset 0 0 20px rgba(${dr},${dg},${db},0.04)`
-    bgBlob.style.transition = 'transform 200ms ease, box-shadow 200ms ease'
-    bgBlob.style.transformOrigin = 'center center'
-    clusterInner.appendChild(bgBlob)
+  outer.appendChild(container)
 
-    const angleStep = (Math.PI * 2) / items.length
-    items.forEach((_item, i) => {
-      const { url, color: itemColor } = resolved[i]
-      const angle = angleStep * i - Math.PI / 2
-      const x = Math.cos(angle) * orbitRadius
-      const y = Math.sin(angle) * orbitRadius
+  const showPlus = isLarge && count > maxShow
+  const badge = document.createElement('div')
+  badge.textContent = showPlus ? `+${count - maxShow}` : `${count}`
+  badge.style.position = 'absolute'
+  badge.style.bottom = '-6px'
+  badge.style.right = '-6px'
+  badge.style.background = dominant
+  badge.style.color = '#fff'
+  badge.style.fontSize = showPlus ? '8px' : '9px'
+  badge.style.fontWeight = '700'
+  badge.style.lineHeight = '1'
+  badge.style.padding = '2px 6px'
+  badge.style.borderRadius = '10px'
+  badge.style.border = '1.5px solid rgba(255,255,255,0.25)'
+  badge.style.boxShadow = `0 0 8px ${dominant}`
+  badge.style.zIndex = '5'
+  badge.style.pointerEvents = 'none'
+  outer.appendChild(badge)
 
-      const mini = document.createElement('div')
-      mini.className = 'cluster-mini-hover'
-      mini.style.position = 'absolute'
-      mini.style.width = `${miniSize}px`
-      mini.style.height = `${miniSize}px`
-      mini.style.borderRadius = '50%'
-      mini.style.background = `url("${url}") center/cover`
-      mini.style.border = '1.5px solid rgba(255,255,255,0.85)'
-      mini.style.boxShadow = `0 0 7px ${itemColor}, 0 0 1.5px #fff`
-      mini.style.top = `calc(50% + ${y}px - ${miniSize / 2}px)`
-      mini.style.left = `calc(50% + ${x}px - ${miniSize / 2}px)`
-      mini.style.pointerEvents = 'none'
-      clusterInner.appendChild(mini)
-    })
-
-    const countBadge = document.createElement('div')
-    countBadge.textContent = `${count}`
-    countBadge.style.position = 'absolute'
-    countBadge.style.bottom = '-4px'
-    countBadge.style.right = '-4px'
-    countBadge.style.background = dominant
-    countBadge.style.color = '#fff'
-    countBadge.style.fontSize = '8px'
-    countBadge.style.fontWeight = '800'
-    countBadge.style.lineHeight = '1'
-    countBadge.style.padding = '2px 5px'
-    countBadge.style.borderRadius = '8px'
-    countBadge.style.border = '1.5px solid rgba(0,0,0,0.5)'
-    countBadge.style.boxShadow = `0 0 8px ${dominant}`
-    countBadge.style.zIndex = '5'
-    clusterInner.appendChild(countBadge)
-
-    outer.appendChild(clusterInner)
-
-    outer.addEventListener('mouseenter', () => {
-      bgBlob.style.transform = 'scale(1.12)'
-      bgBlob.style.boxShadow = `0 0 22px rgba(${dr},${dg},${db},0.45), inset 0 0 30px rgba(${dr},${dg},${db},0.08)`
-      rainbowRing.style.opacity = '0.85'
-      outer.style.zIndex = '100'
-    })
-    outer.addEventListener('mouseleave', () => {
-      bgBlob.style.transform = 'scale(1)'
-      bgBlob.style.boxShadow = `0 0 12px rgba(${dr},${dg},${db},0.25), inset 0 0 20px rgba(${dr},${dg},${db},0.04)`
-      rainbowRing.style.opacity = '1'
-      outer.style.zIndex = '20'
-    })
-  } else {
-    const miniSize = 14
-    const cols = 4
-    const rows = Math.ceil(Math.min(count, 12) / cols)
-    const gap = 2
-    const pad = 5
-    const gridW = cols * (miniSize + gap) - gap + pad * 2
-    const gridH = rows * (miniSize + gap) - gap + pad * 2
-
-    outer.style.width = `${gridW}px`
-    outer.style.height = `${gridH}px`
-    outer.style.display = 'flex'
-    outer.style.justifyContent = 'center'
-    outer.style.alignItems = 'center'
-
-    const grid = document.createElement('div')
-    grid.style.position = 'relative'
-    grid.style.display = 'flex'
-    grid.style.flexWrap = 'wrap'
-    grid.style.alignContent = 'center'
-    grid.style.justifyContent = 'center'
-    grid.style.gap = `${gap}px`
-    grid.style.width = '100%'
-    grid.style.height = '100%'
-    grid.style.padding = `${pad}px`
-    grid.style.borderRadius = '14px'
-    grid.style.background = `radial-gradient(circle at 30% 25%, rgba(${dr},${dg},${db},0.12), rgba(0,0,0,0.92) 75%)`
-    grid.style.backdropFilter = 'blur(8px)'
-    grid.style.boxShadow = `0 0 12px rgba(${dr},${dg},${db},0.18), inset 0 0 16px rgba(${dr},${dg},${db},0.03)`
-    grid.style.transition = 'transform 200ms ease, box-shadow 200ms ease'
-    grid.style.transformOrigin = 'center center'
-
-    const rainbowBorder = document.createElement('div')
-    rainbowBorder.className = 'cluster-rainbow-border'
-    rainbowBorder.style.position = 'absolute'
-    rainbowBorder.style.inset = '-2px'
-    rainbowBorder.style.borderRadius = '15px'
-    rainbowBorder.style.background = 'conic-gradient(from var(--a, 0deg), #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b59b6, #ff6b6b)'
-    const gridOuterR = Math.min(gridW, gridH) / 2 + 2
-    const gridInnerR = gridOuterR - 1.5
-    rainbowBorder.style.mask = `radial-gradient(farthest-side, transparent ${gridInnerR}px, #000 ${gridOuterR}px)`
-    rainbowBorder.style.webkitMask = `radial-gradient(farthest-side, transparent ${gridInnerR}px, #000 ${gridOuterR}px)`
-    rainbowBorder.style.pointerEvents = 'none'
-    rainbowBorder.style.zIndex = '0'
-
-    const gridInner = document.createElement('div')
-    gridInner.style.position = 'relative'
-    gridInner.style.display = 'flex'
-    gridInner.style.flexWrap = 'wrap'
-    gridInner.style.alignContent = 'center'
-    gridInner.style.justifyContent = 'center'
-    gridInner.style.gap = `${gap}px`
-    gridInner.style.width = '100%'
-    gridInner.style.height = '100%'
-    gridInner.style.zIndex = '1'
-
-    const maxShow = cols * rows - 1
-    resolved.slice(0, maxShow).forEach(({ url, color: itemColor }) => {
-      const mini = document.createElement('div')
-      mini.className = 'cluster-mini-hover'
-      mini.style.width = `${miniSize}px`
-      mini.style.height = `${miniSize}px`
-      mini.style.borderRadius = '50%'
-      mini.style.background = `url("${url}") center/cover`
-      mini.style.border = '1px solid rgba(255,255,255,0.75)'
-      mini.style.boxShadow = `0 0 4px ${itemColor}`
-      mini.style.flexShrink = '0'
-      gridInner.appendChild(mini)
-    })
-
-    if (count > maxShow) {
-      const more = document.createElement('div')
-      more.className = 'cluster-mini-hover'
-      more.textContent = `+${count - maxShow}`
-      more.style.width = `${miniSize}px`
-      more.style.height = `${miniSize}px`
-      more.style.borderRadius = '50%'
-      more.style.background = `rgba(${dr},${dg},${db},0.55)`
-      more.style.backdropFilter = 'blur(4px)'
-      more.style.border = `1.5px solid ${dominant}`
-      more.style.color = '#fff'
-      more.style.fontSize = '7px'
-      more.style.fontWeight = '800'
-      more.style.display = 'flex'
-      more.style.alignItems = 'center'
-      more.style.justifyContent = 'center'
-      more.style.flexShrink = '0'
-      gridInner.appendChild(more)
-    }
-
-    grid.appendChild(rainbowBorder)
-    grid.appendChild(gridInner)
-    outer.appendChild(grid)
-
-    outer.addEventListener('mouseenter', () => {
-      grid.style.transform = 'scale(1.1)'
-      grid.style.boxShadow = `0 0 22px rgba(${dr},${dg},${db},0.4), inset 0 0 28px rgba(${dr},${dg},${db},0.06)`
-      outer.style.zIndex = '100'
-    })
-    outer.addEventListener('mouseleave', () => {
-      grid.style.transform = 'scale(1)'
-      grid.style.boxShadow = `0 0 12px rgba(${dr},${dg},${db},0.18), inset 0 0 16px rgba(${dr},${dg},${db},0.03)`
-      outer.style.zIndex = '20'
-    })
-  }
+  outer.addEventListener('mouseenter', () => {
+    container.style.transform = 'scale(1.1)'
+    container.style.boxShadow = `0 0 22px rgba(${dr},${dg},${db},0.4), inset 0 0 24px rgba(0,0,0,0.1)`
+    outer.style.zIndex = '100'
+  })
+  outer.addEventListener('mouseleave', () => {
+    container.style.transform = 'scale(1)'
+    container.style.boxShadow = `0 0 12px rgba(${dr},${dg},${db},0.2), inset 0 0 16px rgba(0,0,0,0.15)`
+    outer.style.zIndex = '20'
+  })
 
   return outer
 }
@@ -971,6 +844,27 @@ async function setupGeoJSONMarkers() {
 }
 
 // Fallback rebuildMarkers using DOM markers (for smaller datasets or when GeoJSON isn't available)
+function processMarkersInChunks<T>(
+  items: T[],
+  processor: (item: T) => void,
+  chunkSize: number,
+  onComplete: () => void
+) {
+  let idx = 0
+  function next() {
+    const end = Math.min(idx + chunkSize, items.length)
+    for (; idx < end; idx++) {
+      processor(items[idx])
+    }
+    if (idx < items.length) {
+      requestAnimationFrame(next)
+    } else {
+      onComplete()
+    }
+  }
+  next()
+}
+
 function rebuildMarkers() {
   if (!map) return
 
@@ -987,11 +881,15 @@ function rebuildMarkers() {
   markers = []
   clusterer.destroy()
 
+  let clusters: ClusterPoint[] = []
+  let validProjects: ProjectData[] = []
+  let speciesToRender: Species[] = []
+
   if (activeDataset.value === 'project-grants') {
     const projectList = isMobile.value
       ? visibleProjects.value.slice(0, 60)
       : visibleProjects.value
-    const validProjects = projectList.filter(p => isValidCoordinate(p.latitude, p.longitude))
+    validProjects = projectList.filter(p => isValidCoordinate(p.latitude, p.longitude))
 
     const clusterItems = validProjects.map((p, i) => ({
       lng: p.longitude,
@@ -1007,51 +905,12 @@ function rebuildMarkers() {
       bounds.getWest(), bounds.getSouth(),
       bounds.getEast(), bounds.getNorth(),
     ]
-    const clusters = clusterer.getClusters(bbox, currentZoom)
-
-    clusters.forEach((cp: ClusterPoint) => {
-      if (cp.type === 'cluster') {
-        const el = createClusterMarkerElement(cp.count, cp.items, validProjects)
-        el.setAttribute('tabindex', '0')
-        el.setAttribute('role', 'button')
-        el.setAttribute('aria-label', `Cluster of ${cp.count} projects`)
-        el.addEventListener('click', () => {
-          if (map) {
-            const items = cp.items
-            const lats = items.map(i => i.lat)
-            const lngs = items.map(i => i.lng)
-            const span = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs))
-            const zoom = Math.max(4, Math.min(12, 14 - Math.log2(Math.max(span, 0.1))))
-            map.flyTo({ center: [cp.lng, cp.lat], zoom, duration: 400 })
-          }
-        })
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([cp.lng, cp.lat])
-          .addTo(map!)
-        markers.push(marker)
-      } else {
-        const project = validProjects[cp.sourceIndex]
-        if (!project) return
-        const el = createProjectMarkerElement(project)
-        el.style.cursor = 'pointer'
-        el.setAttribute('tabindex', '0')
-        el.setAttribute('role', 'button')
-        el.setAttribute('aria-label', project.project_title)
-        el.addEventListener('click', () => { openProjectOverlay(project) })
-        el.addEventListener('keydown', (e: KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectOverlay(project) }
-        })
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([project.longitude, project.latitude])
-          .addTo(map!)
-        markers.push(marker)
-      }
-    })
+    clusters = clusterer.getClusters(bbox, currentZoom)
   } else if (activeDataset.value === 'endangered-species') {
     const speciesList = isMobile.value
       ? visibleSpecies.value.slice(0, 80)
       : visibleSpecies.value
-    const speciesToRender = speciesList.filter(s => isValidCoordinate(s.lat, s.lng))
+    speciesToRender = speciesList.filter(s => isValidCoordinate(s.lat, s.lng))
     const imageUrls = speciesToRender.map(s => s.imageUrl).filter(Boolean)
     
     preloadSpeciesImages(imageUrls, true, baseURL)
@@ -1070,48 +929,78 @@ function rebuildMarkers() {
       bounds.getWest(), bounds.getSouth(),
       bounds.getEast(), bounds.getNorth(),
     ]
-    const clusters = clusterer.getClusters(bbox, currentZoom)
-
-    clusters.forEach((cp: ClusterPoint) => {
-      if (cp.type === 'cluster') {
-        const el = createClusterMarkerElement(cp.count, cp.items, undefined, speciesToRender)
-        el.setAttribute('tabindex', '0')
-        el.setAttribute('role', 'button')
-        el.setAttribute('aria-label', `Cluster of ${cp.count} species`)
-        el.addEventListener('click', () => {
-          if (map) {
-            const items = cp.items
-            const lats = items.map(i => i.lat)
-            const lngs = items.map(i => i.lng)
-            const span = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs))
-            const zoom = Math.max(4, Math.min(12, 14 - Math.log2(Math.max(span, 0.1))))
-            map.flyTo({ center: [cp.lng, cp.lat], zoom, duration: 400 })
-          }
-        })
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([cp.lng, cp.lat])
-          .addTo(map!)
-        markers.push(marker)
-      } else {
-        const species = speciesToRender[cp.sourceIndex]
-        if (!species) return
-        const el = createSpeciesMarkerElement(species)
-        el.style.cursor = 'pointer'
-        el.setAttribute('tabindex', '0')
-        el.setAttribute('role', 'button')
-        el.setAttribute('aria-label', species.commonName)
-        el.addEventListener('click', () => { openSpeciesOverlay(species) })
-        el.addEventListener('keydown', (e: KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSpeciesOverlay(species) }
-        })
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([species.lng, species.lat])
-          .addTo(map!)
-        markers.push(marker)
-      }
-    })
+    clusters = clusterer.getClusters(bbox, currentZoom)
   }
 
+  if (clusters.length === 0) {
+    finishRebuild(currentZoom)
+    return
+  }
+
+  const isProjects = activeDataset.value === 'project-grants'
+  const CLUSTER_CHUNK = 30
+
+  processMarkersInChunks(clusters, (cp: ClusterPoint) => {
+    if (cp.type === 'cluster') {
+      const el = createClusterMarkerElement(
+        cp.count, cp.items,
+        isProjects ? validProjects : undefined,
+        isProjects ? undefined : speciesToRender
+      )
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('role', 'button')
+      el.setAttribute('aria-label', `Cluster of ${cp.count} ${isProjects ? 'projects' : 'species'}`)
+      el.addEventListener('click', () => {
+        if (map) {
+          const items = cp.items
+          const lats = items.map(i => i.lat)
+          const lngs = items.map(i => i.lng)
+          const span = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs))
+          const zoom = Math.max(4, Math.min(12, 14 - Math.log2(Math.max(span, 0.1))))
+          map.flyTo({ center: [cp.lng, cp.lat], zoom, duration: 400 })
+        }
+      })
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([cp.lng, cp.lat])
+        .addTo(map!)
+      markers.push(marker)
+    } else if (isProjects) {
+      const project = validProjects[cp.sourceIndex]
+      if (!project) return
+      const el = createProjectMarkerElement(project)
+      el.style.cursor = 'pointer'
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('role', 'button')
+      el.setAttribute('aria-label', project.project_title)
+      el.addEventListener('click', () => { openProjectOverlay(project) })
+      el.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectOverlay(project) }
+      })
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([project.longitude, project.latitude])
+        .addTo(map!)
+      markers.push(marker)
+    } else {
+      const species = speciesToRender[cp.sourceIndex]
+      if (!species) return
+      const el = createSpeciesMarkerElement(species)
+      el.style.cursor = 'pointer'
+      el.setAttribute('tabindex', '0')
+      el.setAttribute('role', 'button')
+      el.setAttribute('aria-label', species.commonName)
+      el.addEventListener('click', () => { openSpeciesOverlay(species) })
+      el.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSpeciesOverlay(species) }
+      })
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([species.lng, species.lat])
+        .addTo(map!)
+      markers.push(marker)
+    }
+  }, CLUSTER_CHUNK, () => finishRebuild(currentZoom))
+}
+
+function finishRebuild(currentZoom: number) {
   lastClusterZoom = Math.floor(currentZoom)
   if (map) {
     const c = map.getCenter()

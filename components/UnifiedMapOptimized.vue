@@ -9,6 +9,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { useChunkedDataLoader } from '~/composables/useChunkedDataLoader'
 import { useHighPerformanceMarkers } from '~/composables/useHighPerformanceMarkers'
 import { useExternalAPI } from '~/composables/useExternalAPI'
+import { useOfflineTiles } from '~/composables/useOfflineTiles'
 import AnimatedGlobeLoader from '~/components/AnimatedGlobeLoader.vue'
 import LoadingMarkerBubble from '~/components/LoadingMarkerBubble.vue'
 
@@ -61,6 +62,46 @@ const fps = ref(60)
 let lastFrameTime = performance.now()
 let frameCount = 0
 
+// Offline tiles
+const apiKey = (typeof useRuntimeConfig !== 'undefined')
+  ? useRuntimeConfig().public.maptilerApiKey
+  : ''
+const offlineTiles = useOfflineTiles(apiKey, mapContainer)
+const tileMemoryCache = new Map<string, ArrayBuffer>()
+const MAX_MEMORY_TILES = 300
+
+function getCachedTileUrl(url: string, resourceType?: string): string | null {
+  if (resourceType !== 'Tile') return null
+  const match = url.match(/\/satellite\/(\d+)\/(\d+)\/(\d+)\./)
+  if (!match) return null
+  const cacheKey = `tile:${match[1]}/${match[2]}/${match[3]}`
+  const buf = tileMemoryCache.get(cacheKey)
+  if (buf) {
+    return URL.createObjectURL(new Blob([buf], { type: 'image/jpeg' }))
+  }
+  return null
+}
+
+async function preloadTileCacheFromIndexedDB() {
+  const m = map.value
+  if (!m) return
+  const z = Math.floor(m.getZoom())
+  const center = m.getCenter()
+  const x = Math.floor((center.lng + 180) / 360 * Math.pow(2, z))
+  const y = Math.floor((1 - Math.log(Math.tan(center.lat * Math.PI / 180) + 1 / Math.cos(center.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z))
+
+  for (let cx = Math.max(0, x - 4); cx <= Math.min(Math.pow(2, z) - 1, x + 4); cx++) {
+    for (let cy = Math.max(0, y - 4); cy <= Math.min(Math.pow(2, z) - 1, y + 4); cy++) {
+      if (tileMemoryCache.size >= MAX_MEMORY_TILES) return
+      const key = `tile:${z}/${cx}/${cy}`
+      if (!tileMemoryCache.has(key)) {
+        const buf = await offlineTiles.getTile(z, cx, cy)
+        if (buf) tileMemoryCache.set(key, buf)
+      }
+    }
+  }
+}
+
 // Marker management
 const markerManager = ref<ReturnType<typeof useHighPerformanceMarkers> | null>(null)
 
@@ -102,19 +143,20 @@ const initializeMap = async () => {
     style: getMapStyle(),
     center: props.center,
     zoom: props.zoom,
-    transformRequest: (url) => {
-      // Add MapTiler authentication
-      if (url.includes('api.maptiler.com')) {
+    transformRequest: (url, resourceType) => {
+      if (url.includes('api.maptiler.com') && resourceType === 'Tile') {
+        const cachedUrl = getCachedTileUrl(url, resourceType)
+        if (cachedUrl) return { url: cachedUrl }
         return {
-          url: url,
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_MAPTILER_KEY || ''}`
-          }
+          url,
+          headers: { 'Authorization': `Bearer ${apiKey}` }
         }
       }
       return { url }
     }
   })
+
+  offlineTiles.init()
 
   // Wait for map to load
   await new Promise<void>((resolve) => {
@@ -139,6 +181,39 @@ const initializeMap = async () => {
   // Start performance monitoring
   startPerformanceMonitoring()
 
+  // Auto-cache tiles on idle
+  map.value.on('idle', () => {
+    if (!navigator.onLine || !map.value) return
+    const m = map.value
+    const sources = m.getStyle().sources
+    for (const id of Object.keys(sources)) {
+      const source = sources[id]
+      if (source.type === 'raster') {
+        const tiles = (source as { tiles?: string[] }).tiles
+        if (tiles && tiles.length > 0 && tiles[0].includes('maptiler.com/tiles/')) {
+          const z = Math.floor(m.getZoom())
+          const center = m.getCenter()
+          const x = Math.floor((center.lng + 180) / 360 * Math.pow(2, z))
+          const y = Math.floor((1 - Math.log(Math.tan(center.lat * Math.PI / 180) + 1 / Math.cos(center.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z))
+          for (let cx = Math.max(0, x - 4); cx <= Math.min(Math.pow(2, z) - 1, x + 4); cx++) {
+            for (let cy = Math.max(0, y - 4); cy <= Math.min(Math.pow(2, z) - 1, y + 4); cy++) {
+              offlineTiles.hasTile(z, cx, cy).then(found => {
+                if (!found) {
+                  const url = `https://api.maptiler.com/tiles/satellite/${z}/${cx}/${cy}.jpg?key=${apiKey}`
+                  fetch(url).then(resp => {
+                    if (resp.ok) resp.arrayBuffer().then(buf => offlineTiles.setTile(z, cx, cy, buf, 'image/jpeg'))
+                  }).catch(() => {})
+                }
+              })
+            }
+          }
+          preloadTileCacheFromIndexedDB()
+          break
+        }
+      }
+    }
+  })
+
   // Load data
   await loadEntities()
 }
@@ -147,12 +222,10 @@ const initializeMap = async () => {
  * Get map style URL
  */
 const getMapStyle = (): string => {
-  const styles: Record<string, string> = {
-    satellite: 'https://api.maptiler.com/maps/hybrid/style.json?key=' + (import.meta.env.VITE_MAPTILER_KEY || ''),
-    streets: 'https://api.maptiler.com/maps/streets/style.json?key=' + (import.meta.env.VITE_MAPTILER_KEY || ''),
-    dark: 'https://api.maptiler.com/maps/darkmatter/style.json?key=' + (import.meta.env.VITE_MAPTILER_KEY || '')
-  }
-  return styles[props.style] || styles.satellite
+  const base = apiKey
+    ? `https://api.maptiler.com/maps/hybrid/style.json?key=${apiKey}`
+    : 'https://demotiles.maplibre.org/style.json'
+  return base
 }
 
 /**

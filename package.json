@@ -13,21 +13,23 @@
     "test": "vitest"
   },
   "dependencies": {
-    "nuxt": "^3.21.6",
-    "vue": "^3.5.34",
-    "maplibre-gl": "^5.24.0",
-    "supercluster": "^8.0.1",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^3.6.0"
+    "iconify-icon": "^3.0.2",
+    "maplibre-gl": "^5.24.0",
+    "nuxt": "^3.21.6",
+    "supercluster": "^8.0.1",
+    "tailwind-merge": "^3.6.0",
+    "vue": "^3.5.34"
   },
   "devDependencies": {
-    "@nuxt/eslint": "^0.7.0",
     "@iconify-json/lucide": "^1.2.0",
+    "@nuxt/eslint": "^0.7.0",
+    "@playwright/test": "^1.50.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.7.0",
     "vitest": "^2.0.0",
-    "@playwright/test": "^1.50.0"
+    "vue-tsc": "^3.3.2"
   }
 }

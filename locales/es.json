@@ -210,5 +210,29 @@
     "somethingWrong": "Algo salió mal",
     "goHome": "Volver al inicio",
     "tryAgain": "Intentar de nuevo"
+  },
+  "pwa": {
+    "installTitle": "Instalar Earth Guardians Maps",
+    "installDesc": "Instala nuestra app para una mejor experiencia. Accede a los mapas sin conexión y obtén una carga más rápida.",
+    "installDescManual": "Añade Earth Guardians Maps a tu pantalla de inicio para la mejor experiencia. Busca \"Añadir a pantalla de inicio\" en el menú de tu navegador.",
+    "install": "Instalar App",
+    "notNow": "Ahora no",
+    "dontShowWeek": "No mostrar esta semana",
+    "offlineReady": "Ahora puedes usar la app sin conexión",
+    "updateAvailable": "Hay una nueva versión disponible. Actualiza para obtener los últimos cambios."
+  },
+  "offline": {
+    "title": "Caché sin conexión",
+    "downloadShort": "Descargar Mapas",
+    "download": "Descargar Todo",
+    "cancel": "Cancelar",
+    "ready": "Listo sin conexión ✓",
+    "redownload": "Borrar y volver a descargar todos los datos",
+    "statusIdle": "Listo para descargar para uso sin conexión",
+    "statusChecking": "Verificando datos en caché...",
+    "statusDownloading": "Descargando...",
+    "statusCompleted": "Todos los datos disponibles sin conexión ✓",
+    "statusError": "Error al descargar",
+    "cached": "EN CACHÉ"
   }
 }

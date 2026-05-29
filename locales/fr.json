@@ -210,5 +210,29 @@
     "somethingWrong": "Une erreur est survenue",
     "goHome": "Retour à l'accueil",
     "tryAgain": "Réessayer"
+  },
+  "pwa": {
+    "installTitle": "Installer Earth Guardians Maps",
+    "installDesc": "Installez notre application pour une meilleure expérience. Accédez aux cartes hors ligne et bénéficiez d'un chargement plus rapide.",
+    "installDescManual": "Ajoutez Earth Guardians Maps à votre écran d'accueil pour la meilleure expérience. Recherchez \"Ajouter à l'écran d'accueil\" dans le menu de votre navigateur.",
+    "install": "Installer l'App",
+    "notNow": "Pas maintenant",
+    "dontShowWeek": "Ne plus afficher cette semaine",
+    "offlineReady": "Vous pouvez maintenant utiliser l'application hors ligne",
+    "updateAvailable": "Une nouvelle version est disponible. Rafraîchissez pour mettre à jour."
+  },
+  "offline": {
+    "title": "Cache hors ligne",
+    "downloadShort": "Télécharger Cartes",
+    "download": "Tout Télécharger",
+    "cancel": "Annuler",
+    "ready": "Prêt hors ligne ✓",
+    "redownload": "Effacer et re-télécharger toutes les données",
+    "statusIdle": "Prêt à télécharger pour une utilisation hors ligne",
+    "statusChecking": "Vérification des données en cache...",
+    "statusDownloading": "Téléchargement...",
+    "statusCompleted": "Toutes les données disponibles hors ligne ✓",
+    "statusError": "Échec du téléchargement",
+    "cached": "EN CACHE"
   }
 }

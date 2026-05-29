@@ -14,16 +14,10 @@
           </p>
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <NuxtLink
-              to="/project-grants"
-              class="px-8 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+              to="/info"
+              class="px-8 py-3 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700 transition-colors"
             >
-              Explore Projects
-            </NuxtLink>
-            <NuxtLink
-              to="/endangered-species"
-              class="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-            >
-              View Species
+              Suggest a Dataset
             </NuxtLink>
           </div>
         </div>

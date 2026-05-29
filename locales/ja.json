@@ -207,5 +207,29 @@
     "somethingWrong": "問題が発生しました",
     "goHome": "ホームに戻る",
     "tryAgain": "再試行"
+  },
+  "pwa": {
+    "installTitle": "Earth Guardians Maps をインストール",
+    "installDesc": "より良い体験のためにアプリをインストールしてください。オフラインでマップにアクセスでき、読み込みが高速化します。",
+    "installDescManual": "最良の体験のためにEarth Guardians Mapsをホーム画面に追加してください。ブラウザメニューの「ホーム画面に追加」を探してください。",
+    "install": "アプリをインストール",
+    "notNow": "後で",
+    "dontShowWeek": "今週は再表示しない",
+    "offlineReady": "オフラインでアプリを使用できるようになりました",
+    "updateAvailable": "新しいバージョンが利用可能です。更新してください。"
+  },
+  "offline": {
+    "title": "オフラインキャッシュ",
+    "downloadShort": "マップをダウンロード",
+    "download": "すべてダウンロード",
+    "cancel": "キャンセル",
+    "ready": "オフライン準備完了 ✓",
+    "redownload": "すべてのデータを消去して再ダウンロード",
+    "statusIdle": "オフライン使用のためにダウンロード準備完了",
+    "statusChecking": "キャッシュデータを確認中...",
+    "statusDownloading": "ダウンロード中...",
+    "statusCompleted": "すべてのデータがオフラインで利用可能 ✓",
+    "statusError": "ダウンロードに失敗しました",
+    "cached": "キャッシュ済み"
   }
 }

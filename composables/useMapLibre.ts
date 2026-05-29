@@ -7,25 +7,8 @@ export function getMapStyle(apiKey?: string): string {
   return 'https://demotiles.maplibre.org/style.json'
 }
 
-const tileCache = new Map<string, Response>()
+const tileResponseCache = new Map<string, ArrayBuffer>()
 const MAX_TILE_CACHE = 500
-
-export function trimTileCache() {
-  if (tileCache.size > MAX_TILE_CACHE) {
-    const keys = [...tileCache.keys()]
-    const toDelete = keys.slice(0, tileCache.size - MAX_TILE_CACHE)
-    toDelete.forEach(k => tileCache.delete(k))
-  }
-}
-
-export function cacheTileResponse(url: string, response: Response) {
-  tileCache.set(url, response)
-  trimTileCache()
-}
-
-export function clearMapCache() {
-  tileCache.clear()
-}
 
 export function useMapLibre(
   containerRef: Ref<HTMLDivElement | null>,
@@ -43,6 +26,7 @@ export function useMapLibre(
   let errorCount = 0
   let usedFallback = false
   let loadTimeout: ReturnType<typeof setTimeout> | null = null
+  let idleCacheTimer: ReturnType<typeof setTimeout> | null = null
 
   const apiKey = (typeof useRuntimeConfig !== 'undefined')
     ? useRuntimeConfig().public.maptilerApiKey
@@ -62,35 +46,61 @@ export function useMapLibre(
   onUnmounted(() => {
     isMounted = false
     if (loadTimeout) clearTimeout(loadTimeout)
+    if (idleCacheTimer) clearTimeout(idleCacheTimer)
     if (map.value) {
       map.value.remove()
       map.value = null
     }
   })
 
-  function createTransformRequest() {
-    return (url: string, resourceType?: string) => {
-      if (tileCache.has(url)) {
-        return {
-          url,
-          headers: {},
-          method: 'GET' as const,
-          type: 'image' as const,
-          credentials: 'same-origin' as const,
-          collectResourceTiming: false,
+  async function loadNearbyTilesToMemoryCache(m: MapLibreMap) {
+    const z = Math.floor(m.getZoom())
+    const center = m.getCenter()
+    const x = Math.floor((center.lng + 180) / 360 * Math.pow(2, z))
+    const y = Math.floor((1 - Math.log(Math.tan(center.lat * Math.PI / 180) + 1 / Math.cos(center.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z))
+
+    const minX = Math.max(0, x - 3)
+    const maxX = Math.min(Math.pow(2, z) - 1, x + 3)
+    const minY = Math.max(0, y - 3)
+    const maxY = Math.min(Math.pow(2, z) - 1, y + 3)
+
+    for (let cx = minX; cx <= maxX; cx++) {
+      for (let cy = minY; cy <= maxY; cy++) {
+        const buf = await offlineTiles.getTile(z, cx, cy)
+        if (buf && !tileResponseCache.has(`tile:${z}/${cx}/${cy}`)) {
+          tileResponseCache.set(`tile:${z}/${cx}/${cy}`, buf)
+          if (tileResponseCache.size > MAX_TILE_CACHE) {
+            const firstKey = tileResponseCache.keys().next().value
+            if (firstKey) tileResponseCache.delete(firstKey)
+          }
         }
       }
+    }
+  }
 
-      if (resourceType === 'Tile' && !navigator.onLine) {
+  function createTransformRequest() {
+    return (url: string, resourceType?: string) => {
+      if (resourceType === 'Tile') {
         const match = url.match(/\/satellite\/(\d+)\/(\d+)\/(\d+)\./)
         if (match) {
           const [, z, x, y] = match
-          const localUrl = `/tiles/${z}/${x}/${y}.jpg`
-          return { url: localUrl }
+          const cacheKey = `tile:${z}/${x}/${y}`
+          const cached = tileResponseCache.get(cacheKey)
+          if (cached) {
+            const blob = new Blob([cached], { type: 'image/jpeg' })
+            const blobUrl = URL.createObjectURL(blob)
+            return { url: blobUrl }
+          }
         }
       }
-
       return { url }
+    }
+  }
+
+  function cleanupBlobUrls() {
+    for (const key of tileResponseCache.keys()) {
+      const val = tileResponseCache.get(key)
+      if (val instanceof Blob) { } // skip
     }
   }
 
@@ -130,7 +140,6 @@ export function useMapLibre(
       if (options.isGlobe) {
         m.on('style.load', () => {
           try { m.setProjection({ type: 'globe' }) } catch (e) {
-            // eslint-disable-next-line no-console
             console.error('Error setting globe projection:', e)
           }
         })
@@ -143,58 +152,20 @@ export function useMapLibre(
       })
 
       m.on('idle', () => {
-        if (!isMounted || !navigator.onLine) return
-        const canvas = m.getCanvas()
-        if (canvas) {
-          const sources = m.getStyle().sources
-          for (const id of Object.keys(sources)) {
-            const source = sources[id]
-            if (source.type === 'raster') {
-              const tiles = (source as { tiles?: string[] }).tiles
-              if (tiles && tiles.length > 0) {
-                const tileUrl = tiles[0]
-                if (tileUrl.includes('maptiler.com/tiles/satellite/')) {
-                  const z = Math.floor(m.getZoom())
-                  const center = m.getCenter()
-                  const x = Math.floor((center.lng + 180) / 360 * Math.pow(2, z))
-                  const y = Math.floor((1 - Math.log(Math.tan(center.lat * Math.PI / 180) + 1 / Math.cos(center.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z))
-
-                  const minX = Math.max(0, x - 4)
-                  const maxX = Math.min(Math.pow(2, z) - 1, x + 4)
-                  const minY = Math.max(0, y - 4)
-                  const maxY = Math.min(Math.pow(2, z) - 1, y + 4)
-
-                  for (let cx = minX; cx <= maxX; cx++) {
-                    for (let cy = minY; cy <= maxY; cy++) {
-                      offlineTiles.hasTile(z, cx, cy).then(found => {
-                        if (!found) {
-                          const url = `https://api.maptiler.com/tiles/satellite/${z}/${cx}/${cy}.jpg?key=${apiKey}`
-                          fetch(url).then(resp => {
-                            if (resp.ok) {
-                              resp.arrayBuffer().then(buf => {
-                                offlineTiles.setTile(z, cx, cy, buf, 'image/jpeg')
-                              })
-                            }
-                          }).catch(() => {})
-                        }
-                      })
-                    }
-                  }
-                  break
-                }
-              }
-            }
-          }
-        }
+        if (!isMounted) return
+        if (idleCacheTimer) clearTimeout(idleCacheTimer)
+        idleCacheTimer = setTimeout(async () => {
+          if (!navigator.onLine || !m) return
+          loadNearbyTilesToMemoryCache(m)
+          await cacheVisibleTiles(m)
+        }, 2000)
       })
 
       m.on('error', (err: unknown) => {
-        // eslint-disable-next-line no-console
         console.error('MapLibre error:', err)
         errorCount++
         if (!usedFallback && errorCount >= 2 && style.includes('maptiler.com')) {
           usedFallback = true
-          // eslint-disable-next-line no-console
           console.warn('MapTiler style failed, falling back to demotiles style')
           m.setStyle('https://demotiles.maplibre.org/style.json')
           return
@@ -208,10 +179,62 @@ export function useMapLibre(
       loadTimeout = setTimeout(() => { if (isLoading.value) isLoading.value = false }, 10000)
       map.value = m
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('Failed to initialize map:', err)
       isLoading.value = false
       hasError.value = true
+    }
+  }
+
+  async function cacheVisibleTiles(m: MapLibreMap) {
+    if (!navigator.onLine) return
+    const canvas = m.getCanvas()
+    if (!canvas) return
+    const sources = m.getStyle().sources
+    for (const id of Object.keys(sources)) {
+      const source = sources[id]
+      if (source.type === 'raster') {
+        const tiles = (source as { tiles?: string[] }).tiles
+        if (tiles && tiles.length > 0 && tiles[0].includes('maptiler.com/tiles/satellite/')) {
+          const z = Math.floor(m.getZoom())
+          const center = m.getCenter()
+          const x = Math.floor((center.lng + 180) / 360 * Math.pow(2, z))
+          const y = Math.floor((1 - Math.log(Math.tan(center.lat * Math.PI / 180) + 1 / Math.cos(center.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z))
+          const minX = Math.max(0, x - 4)
+          const maxX = Math.min(Math.pow(2, z) - 1, x + 4)
+          const minY = Math.max(0, y - 4)
+          const maxY = Math.min(Math.pow(2, z) - 1, y + 4)
+
+          for (let cx = minX; cx <= maxX; cx++) {
+            for (let cy = minY; cy <= maxY; cy++) {
+              const cacheKey = `tile:${z}/${cx}/${cy}`
+              if (!tileResponseCache.has(cacheKey)) {
+                offlineTiles.hasTile(z, cx, cy).then(found => {
+                  if (!found) {
+                    const url = `https://api.maptiler.com/tiles/satellite/${z}/${cx}/${cy}.jpg?key=${apiKey}`
+                    fetch(url).then(resp => {
+                      if (resp.ok) {
+                        resp.arrayBuffer().then(buf => {
+                          offlineTiles.setTile(z, cx, cy, buf, 'image/jpeg')
+                          if (tileResponseCache.size < MAX_TILE_CACHE) {
+                            tileResponseCache.set(cacheKey, buf)
+                          }
+                        })
+                      }
+                    }).catch(() => {})
+                  } else {
+                    offlineTiles.getTile(z, cx, cy).then(buf => {
+                      if (buf && tileResponseCache.size < MAX_TILE_CACHE) {
+                        tileResponseCache.set(cacheKey, buf)
+                      }
+                    })
+                  }
+                })
+              }
+            }
+          }
+          break
+        }
+      }
     }
   }
 

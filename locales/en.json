@@ -210,5 +210,29 @@
     "somethingWrong": "Something went wrong",
     "goHome": "Go Home",
     "tryAgain": "Try Again"
+  },
+  "pwa": {
+    "installTitle": "Install Earth Guardians Maps",
+    "installDesc": "Install our app for a better experience. Access maps offline and get faster loading.",
+    "installDescManual": "Add Earth Guardians Maps to your home screen for the best experience. Look for \"Add to Home Screen\" in your browser menu.",
+    "install": "Install App",
+    "notNow": "Not Now",
+    "dontShowWeek": "Don't show again this week",
+    "offlineReady": "You can now use the app offline",
+    "updateAvailable": "A new version is available. Refresh to update."
+  },
+  "offline": {
+    "title": "Offline Cache",
+    "downloadShort": "Download Maps",
+    "download": "Download All",
+    "cancel": "Cancel",
+    "ready": "Ready Offline ✓",
+    "redownload": "Clear and re-download all data",
+    "statusIdle": "Ready to download for offline use",
+    "statusChecking": "Checking cached data...",
+    "statusDownloading": "Downloading...",
+    "statusCompleted": "All data available offline ✓",
+    "statusError": "Download failed",
+    "cached": "CACHED"
   }
 }

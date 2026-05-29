@@ -136,8 +136,32 @@
                 class="mt-1 h-1 w-1 rounded-full"
                 :class="getActiveIndicatorClass(item.variant)"
               />
-            </NuxtLink>
-          </template>
+          </NuxtLink>
+            </template>
+
+            <!-- Download for offline -->
+            <button
+              class="group relative flex flex-col items-center"
+              @click="openOfflineDownload"
+            >
+              <div
+                :class="[tooltipClass, { 'opacity-100': hoveredIndex === navItems.length + 1 }]"
+                @mouseenter="onDockHover(navItems.length + 1)"
+                @mouseleave="onDockLeave()"
+              >
+                {{ t('offline.downloadShort') }}
+                <div :class="tooltipArrowClass" />
+              </div>
+
+              <div
+                :class="utilityIconClass"
+                :style="getItemStyle(navItems.length + 1)"
+                @mouseenter="onDockHover(navItems.length + 1)"
+                @mouseleave="onDockLeave()"
+              >
+                <Icon name="lucide:download" class="transition-all duration-150" :class="getItemIconClass(navItems.length + 1)" />
+              </div>
+            </button>
 
           <!-- Separator -->
           <div :class="separatorClass" />
@@ -188,6 +212,12 @@
         </div>
       </div>
     </nav>
+
+    <!-- PWA Install Popup -->
+    <PwaInstallPopup />
+
+    <!-- Offline Download Popup -->
+    <OfflineDownloadPopup ref="offlineDownloadRef" />
   </div>
 </template>
 
@@ -226,13 +256,18 @@ const is3DRoute = computed(() => route.path.endsWith('/3d'))
 const showUnifiedHeader = computed(() => isMapRoute.value || route.path === '/info')
 const showViewToggle = computed(() => isMapRoute.value)
 
+const datasetBase = computed(() => {
+  if (route.path.startsWith('/project-grants')) return '/project-grants'
+  if (route.path.startsWith('/endangered-species')) return '/endangered-species'
+  return null
+})
 const view2DRoute = computed(() => {
-  const base = route.path.endsWith('/3d') ? route.path.replace('/3d', '') : route.path
-  return base
+  if (datasetBase.value) return datasetBase.value
+  return route.path.replace(/\/3d$/, '') || '/'
 })
 const view3DRoute = computed(() => {
-  const base = route.path.endsWith('/3d') ? route.path : `${route.path}/3d`
-  return base
+  if (datasetBase.value) return `${datasetBase.value}/3d`
+  return route.path.endsWith('/3d') ? route.path : `${route.path}/3d`
 })
 
 const isLightTheme = computed(() => !isDark.value)
@@ -350,12 +385,18 @@ const dockRef = ref<HTMLElement | null>(null)
 const dockItemRefs = new Map<number, Element>()
 const hoveredIndex = ref<number | null>(null)
 
+const offlineDownloadRef = ref<{ open: () => void; close: () => void } | null>(null)
+
+function openOfflineDownload() {
+  offlineDownloadRef.value?.open()
+}
+
 const baseSize = 44
 const maxSize = 58
 const neighborSize = 50
 
-// +1 for language switcher (dark mode moved to header)
-const totalDockItems = computed(() => navItems.length + 1)
+// +2 for language switcher + download button
+const totalDockItems = computed(() => navItems.length + 2)
 const itemSizes = ref<number[]>(Array(totalDockItems.value).fill(baseSize))
 
 function onDockHover(index: number) {

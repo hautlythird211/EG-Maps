@@ -1,20 +1,48 @@
 {
-  "name": "Earth Guardians - Interactive Data Visualization",
-  "short_name": "Earth Guardians",
-  "description": "Explore endangered species and project grants data through interactive 2D maps and 3D globe visualizations",
-  "start_url": "/EG-Maps/",
+  "name": "Earth Guardians Maps",
+  "short_name": "EG Maps",
+  "description": "Interactive data visualization platform for Earth Guardians projects and endangered species worldwide. Explore 2D maps and 3D globes with satellite imagery.",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
   "orientation": "any",
+  "scope": ".",
+  "categories": ["education", "environment", "maps", "visualization"],
+  "lang": "en",
+  "dir": "ltr",
+  "display_override": ["standalone", "minimal-ui"],
+  "edge_side_panel": {},
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/EG-Maps/eg-logo.png",
+      "src": "/eg-logo.png",
       "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192x140.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "categories": ["education", "environment"],
-  "lang": "en"
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Project Grants",
+      "short_name": "Projects",
+      "description": "Explore global grant initiatives",
+      "url": "/project-grants",
+      "icons": [{ "src": "/eg-logo.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Endangered Species",
+      "short_name": "Species",
+      "description": "Discover endangered species worldwide",
+      "url": "/endangered-species",
+      "icons": [{ "src": "/eg-logo.png", "sizes": "512x512" }]
+    }
+  ]
 }
